@@ -1,0 +1,29 @@
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h3 class="mb-0">Corsi</h3>
+  <a href="<?php echo \App\Core\Helpers::url('/courses/create'); ?>" class="btn btn-primary">Nuovo Corso</a>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead><tr><th>Titolo</th><th>Data</th><th>Orario</th><th>Anno</th><th></th></tr></thead>
+        <tbody>
+          <?php foreach ($rows as $r) { ?>
+          <tr>
+            <td><?php echo htmlspecialchars($r['title']); ?></td>
+            <td><?php echo htmlspecialchars($r['course_date']); ?></td>
+            <td><?php echo htmlspecialchars(($r['start_time'] ?? '').' - '.($r['end_time'] ?? '')); ?></td>
+            <td><?php echo (int)$r['year']; ?></td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="<?php echo \App\Core\Helpers::url('/courses/'.$r['id']); ?>">Apri</a>
+            </td>
+          </tr>
+          <?php } ?>
+          <?php if (empty($rows)) { ?>
+          <tr><td colspan="5" class="text-center text-muted py-4">Nessun corso</td></tr>
+          <?php } ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+body{font-family:Arial, sans-serif; font-size:12pt; color:#222;}
+.box{border:1px solid #999; padding:16px; border-radius:6px;}
+.title{font-size:18pt; font-weight:bold; margin-bottom:12px; text-align:center;}
+.row{margin:6px 0;}
+.muted{color:#666;}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="title">Attestato DM</div>
+    <div class="row"><strong>Associazione:</strong> {{ASSOCIATION_NAME}}</div>
+    <div class="row"><strong>Socio:</strong> {{MEMBER_NAME}}</div>
+    <div class="row"><strong>Email:</strong> {{MEMBER_EMAIL}}</div>
+    <div class="row"><strong>Corso:</strong> {{COURSE_TITLE}}</div>
+    <div class="row"><strong>Data corso:</strong> {{COURSE_DATE}} {{START_TIME}}-{{END_TIME}}</div>
+    <div class="row"><strong>Anno:</strong> {{YEAR}}</div>
+    <div class="row"><strong>Data di emissione:</strong> {{DATE}}</div>
+    <hr>
+    <div class="row muted">Documento generato automaticamente - gestione AP</div>
+  </div>
+</body>
+</html>
