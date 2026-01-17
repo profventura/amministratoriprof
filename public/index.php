@@ -24,13 +24,6 @@ use App\Controllers\APPaymentsController;
 use App\Controllers\DocumentsController;
 use App\Controllers\CertificatesController;
 $router = new Router();
-$pdoBootstrap = DB::conn();
-// Ensure superuser admin exists in users
-$adminExists = (int)$pdoBootstrap->query("SELECT COUNT(*) c FROM users WHERE username='admin'")->fetch()['c'];
-if ($adminExists === 0) {
-  $stmt = $pdoBootstrap->prepare('INSERT INTO users (username,password_hash,role,active) VALUES (?,?,?,?)');
-  $stmt->execute(['admin',password_hash('password', PASSWORD_DEFAULT),'admin',1]);
-}
 $router->get('/login', [AuthController::class,'loginForm']);
 $router->post('/login', [AuthController::class,'login']);
 $router->get('/logout', [AuthController::class,'logout']);

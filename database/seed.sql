@@ -1,11 +1,7 @@
 -- Minimal seed data to quickly test the application
--- Creates one admin user, sample members, memberships, payments, cash categories and flows
+-- Creates sample members, memberships, payments, cash categories and flows
 
 USE am_professionisti;
-
--- Admin user: username=admin, password=password (bcrypt)
-INSERT INTO users (username, password_hash, role, active)
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9F/2Wf7r5K4c5MTNRQH1yK', 'admin', 1);
 
 -- Association settings (receipt sequence for current year)
 INSERT INTO settings (association_name, address, city, email, phone, receipt_sequence_current, receipt_sequence_year, updated_at)
