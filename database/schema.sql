@@ -187,4 +187,18 @@ CREATE TABLE IF NOT EXISTS settings (
 -- Migration: add membership certificate template path
 ALTER TABLE settings
   ADD COLUMN IF NOT EXISTS membership_certificate_template_path VARCHAR(255) NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS dm_certificate_template_docx_path VARCHAR(255) NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS membership_certificate_template_docx_path VARCHAR(255) NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS certificate_stamp_name_x INT NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS certificate_stamp_name_y INT NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS certificate_stamp_number_x INT NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS certificate_stamp_number_y INT NULL;
+ALTER TABLE settings
+  ADD COLUMN IF NOT EXISTS certificate_stamp_font_size INT NULL;
 

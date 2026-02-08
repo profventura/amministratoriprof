@@ -15,14 +15,15 @@ use App\Core\Auth;
 use App\Core\Helpers;
 use App\Core\DB;
 use App\Controllers\AuthController;
+use App\Controllers\CertificatesController;
 use App\Controllers\CoursesController;
 use App\Controllers\DMCertificatesController;
 use App\Controllers\ReceiptsController;
+use App\Controllers\SettingsController;
 use App\Controllers\MembersController;
 use App\Controllers\MembershipsController;
 use App\Controllers\APPaymentsController;
 use App\Controllers\DocumentsController;
-use App\Controllers\CertificatesController;
 $router = new Router();
 $pdoBootstrap = DB::conn();
 // Ensure superuser admin exists in users
@@ -98,4 +99,11 @@ $router->post('/courses/{id}/participants/add', [CoursesController::class,'addPa
 $router->post('/courses/{id}/participants/remove', [CoursesController::class,'removeParticipant']);
 $router->post('/documents/dm-certificate/{id}/generate', [DMCertificatesController::class,'generateSingle']);
 $router->post('/documents/dm-certificate/{id}/generate-mass', [DMCertificatesController::class,'generateMass']);
+$router->get('/documents/download', [DocumentsController::class,'downloadByPath']);
+$router->get('/settings', [SettingsController::class,'index']);
+$router->post('/settings/update-template', [SettingsController::class,'updateTemplate']);
+$router->post('/settings/test-docx', [SettingsController::class,'testDocx']);
+$router->post('/settings/update-stamp', [SettingsController::class,'updateStamp']);
+$router->post('/settings/preview-stamp', [SettingsController::class,'previewStamp']);
+$router->get('/settings/pdf-geometry', [SettingsController::class,'getPdfGeometry']);
 $router->dispatch();

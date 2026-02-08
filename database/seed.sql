@@ -11,7 +11,10 @@ VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9F/2Wf7r5K4c5MTNRQH1yK',
 INSERT INTO settings (association_name, address, city, email, phone, receipt_sequence_current, receipt_sequence_year, updated_at)
 VALUES ('Associazione AP', 'Via Roma 1', 'Milano', 'info@associazione-ap.it', '+39 02 123456', 0, YEAR(CURDATE()), NOW());
 -- Set default membership certificate template
-UPDATE settings SET membership_certificate_template_path='docs/AP_APPARTENENZA_2025_ieva_232.pdf';
+UPDATE settings SET membership_certificate_template_path=NULL;
+UPDATE settings SET membership_certificate_template_docx_path='app/templates/certificato.docx';
+UPDATE settings SET dm_certificate_template_docx_path='app/templates/certificato.docx';
+UPDATE settings SET certificate_stamp_name_x=100, certificate_stamp_name_y=120, certificate_stamp_number_x=100, certificate_stamp_number_y=140, certificate_stamp_font_size=16;
 
 -- Cash categories
 INSERT INTO cash_categories (name, type, active) VALUES

@@ -118,6 +118,32 @@ $config = require __DIR__ . '/../config.php';
                 <span class="hide-menu">Ricevute</span>
               </a>
             </li>
+            <li class="sidebar-item">
+              <a class="sidebar-link has-arrow" href="javascript:void(0)" aria-expanded="false">
+                <iconify-icon icon="solar:settings-line-duotone"></iconify-icon>
+                <span class="hide-menu">Settings</span>
+              </a>
+              <ul aria-expanded="false" class="collapse first-level">
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Certificati</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings/attestati'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Attestati</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings/email'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Email</span>
+                  </a>
+                </li>
+              </ul>
+            </li>
             
              <?php if (Auth::check()) { ?>
             <li class="sidebar-item">
@@ -208,7 +234,8 @@ $config = require __DIR__ . '/../config.php';
               'memberships' => 'Iscrizioni',
               'ap' => 'Pagamenti Quote',
               'receipts' => 'Ricevute',
-              'courses' => 'Corsi'
+              'courses' => 'Corsi',
+              'settings' => 'Settings'
             ];
             $seg0 = $segments[0] ?? null;
             $label0 = $seg0 ? ($labels[$seg0] ?? ucfirst(str_replace('-', ' ', $seg0))) : null;
@@ -294,6 +321,10 @@ $config = require __DIR__ . '/../config.php';
       'payments/index',
       'logs/index',
       'software/index',
+      'members/index',
+      'memberships/index',
+      'courses/index',
+      'receipts/index',
     ];
     if (in_array(($template ?? ''), $dtTemplates, true)) {
   ?>
