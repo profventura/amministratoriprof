@@ -12,5 +12,5 @@ return [
     'base_url' => '/amministratoriprof/',
     'server_port' => 8080,
     'upload_dir' => __DIR__ . '/../public/uploads',
-  ]
+  ],
 ];

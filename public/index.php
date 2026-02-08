@@ -1,15 +1,25 @@
 <?php
-declare(strict_types=1);
-session_start();
+// declare(strict_types=1); // Disabilitato temporaneamente per compatibilità
+if (session_status() === PHP_SESSION_NONE) {
+  session_start();
+}
 // Autoload vendor libraries if present (Dompdf, PHPMailer, etc.)
 $vendorAutoload = __DIR__ . '/../vendor/autoload.php';
 if (file_exists($vendorAutoload)) { require $vendorAutoload; }
 spl_autoload_register(function($class){
   $prefix = 'App\\';
   if (strncmp($prefix, $class, strlen($prefix)) !== 0) return;
-  $path = __DIR__ . '/../app/' . str_replace('\\', '/', substr($class, strlen($prefix))) . '.php';
+  // Gestione case-sensitive per Linux
+  $parts = explode('\\', substr($class, strlen($prefix)));
+  // Le cartelle principali in app/ sono spesso lowercase o Capitalized in modo inconsistente
+  // Mappiamo le cartelle principali note per forzare il casing corretto se necessario
+  // Ma la soluzione migliore è rinominare le cartelle su FS.
+  // Qui assumiamo che l'utente rinominerà le cartelle come:
+  // app/Core, app/Controllers, app/Models, app/Services
+  $path = __DIR__ . '/../app/' . implode('/', $parts) . '.php';
   if (file_exists($path)) require $path;
 });
+
 use App\Core\Router;
 use App\Core\Auth;
 use App\Core\Helpers;
@@ -52,6 +62,10 @@ $router->get('/', function(){
   $counts['cash_expense'] = $expense;
   $counts['cash_balance'] = $income - $expense;
   Helpers::view('dashboard', ['title'=>'Dashboard','counts'=>$counts]);
+});
+// Aggiunta rotta diagnostica
+$router->get('/check_env.php', function(){
+    require __DIR__ . '/../check_env.php';
 });
 $router->get('/admin/migrate', function(){
   if (!Auth::isAdmin()) { http_response_code(403); echo '403'; return; }

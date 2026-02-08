@@ -1,15 +1,19 @@
-RewriteEngine On
+# .htaccess per OVH
+# Assicurati che i permessi del file siano 644 (o 604) e NON 777
 
-# Serve existing files/directories as-is
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
 
-# Allow direct access to assets in /public
-RewriteCond %{REQUEST_URI} ^/public/
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteRule ^ - [L]
+    # Serve existing files/directories as-is
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-# Route everything else to root index.php (front controller)
-RewriteRule ^ index.php [QSA,L]
+    # Route everything else to root index.php
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Disabilita listing directory
+Options -Indexes
 

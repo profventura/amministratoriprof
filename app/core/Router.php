@@ -24,6 +24,10 @@ class Router {
     if ($scriptDir !== '/' && strpos($uri, $scriptDir) === 0) {
       $uri = substr($uri, strlen($scriptDir));
     }
+    // Rimuove index.php se presente nell'URL (es. se la rewrite rule non funziona come atteso su alcuni server)
+    if (strpos($uri, '/index.php') === 0) {
+      $uri = substr($uri, 10);
+    }
     $uri = rtrim($uri, '/') ?: '/';
     if (isset($this->routes[$method][$uri])) {
       $handler = $this->routes[$method][$uri];
