@@ -9,15 +9,32 @@ if (file_exists($vendorAutoload)) { require $vendorAutoload; }
 spl_autoload_register(function($class){
   $prefix = 'App\\';
   if (strncmp($prefix, $class, strlen($prefix)) !== 0) return;
-  // Gestione case-sensitive per Linux
+  // Gestione case-sensitive per Linux: normalizza tutto in lowercase per la ricerca del file
+  // Questo assume che l'utente abbia rinominato le cartelle in lowercase (controllers, models, core)
+  // OPPURE che l'utente abbia rinominato correttamente in CamelCase.
+  
+  // Tentativo 1: Path standard (CamelCase come nel namespace)
   $parts = explode('\\', substr($class, strlen($prefix)));
-  // Le cartelle principali in app/ sono spesso lowercase o Capitalized in modo inconsistente
-  // Mappiamo le cartelle principali note per forzare il casing corretto se necessario
-  // Ma la soluzione migliore è rinominare le cartelle su FS.
-  // Qui assumiamo che l'utente rinominerà le cartelle come:
-  // app/Core, app/Controllers, app/Models, app/Services
   $path = __DIR__ . '/../app/' . implode('/', $parts) . '.php';
-  if (file_exists($path)) require $path;
+  
+  if (file_exists($path)) {
+      require $path;
+      return;
+  }
+  
+  // Tentativo 2: Path con cartelle in lowercase (comune errore su FTP)
+  // App\Core\Router -> app/core/Router.php
+  $lcParts = $parts;
+  // Convertiamo solo la prima parte (es. Core -> core) in lowercase, lasciando il file (Router.php) CaseSensitive
+  if (count($lcParts) > 1) {
+      $lcParts[0] = strtolower($lcParts[0]); 
+  }
+  $pathLc = __DIR__ . '/../app/' . implode('/', $lcParts) . '.php';
+  
+  if (file_exists($pathLc)) {
+      require $pathLc;
+      return;
+  }
 });
 
 use App\Core\Router;
@@ -91,6 +108,10 @@ $router->post('/members/{id}/update', [MembersController::class,'update']);
 $router->post('/members/{id}/delete', [MembersController::class,'delete']);
 // Iscrizioni annuali
 $router->get('/memberships', [MembershipsController::class,'index']);
+$router->get('/memberships/{id}/edit', [MembershipsController::class,'edit']);
+$router->post('/memberships/{id}/edit', [MembershipsController::class,'update']);
+$router->get('/memberships/{id}/delete', [MembershipsController::class,'delete']); // Usiamo GET per link semplice, o POST se preferisci form
+
 // Pagamenti AP (quote)
 $router->get('/ap/payments/create', [APPaymentsController::class,'createForm']);
 $router->post('/ap/payments', [APPaymentsController::class,'store']);
@@ -115,6 +136,12 @@ $router->post('/documents/dm-certificate/{id}/generate', [DMCertificatesControll
 $router->post('/documents/dm-certificate/{id}/generate-mass', [DMCertificatesController::class,'generateMass']);
 $router->get('/documents/download', [DocumentsController::class,'downloadByPath']);
 $router->get('/settings', [SettingsController::class,'index']);
+$router->get('/settings/attestati', [SettingsController::class,'attestati']);
+$router->post('/settings/attestati/update-template', [SettingsController::class,'updateAttestatiTemplate']);
+$router->post('/settings/attestati/update-stamp', [SettingsController::class,'updateAttestatiStamp']);
+$router->post('/settings/attestati/preview-stamp', [SettingsController::class,'previewAttestatiStamp']);
+$router->get('/settings/email', [SettingsController::class,'email']);
+$router->post('/settings/email/update', [SettingsController::class,'updateEmailSettings']);
 $router->post('/settings/update-template', [SettingsController::class,'updateTemplate']);
 $router->post('/settings/test-docx', [SettingsController::class,'testDocx']);
 $router->post('/settings/update-stamp', [SettingsController::class,'updateStamp']);

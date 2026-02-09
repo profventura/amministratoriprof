@@ -20,19 +20,29 @@ CREATE TABLE IF NOT EXISTS users (
 -- Members (soci)
 CREATE TABLE IF NOT EXISTS members (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  member_number VARCHAR(50) NULL,
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
+  studio_name VARCHAR(150) NULL,
   email VARCHAR(190) NULL,
   phone VARCHAR(50) NULL,
+  mobile_phone VARCHAR(50) NULL,
   address VARCHAR(190) NULL,
   city VARCHAR(120) NULL,
+  province VARCHAR(10) NULL,
+  zip_code VARCHAR(10) NULL,
   birth_date DATE NULL,
   tax_code VARCHAR(32) NULL,
+  billing_cf_piva VARCHAR(32) NULL,
+  is_revisor TINYINT(1) NOT NULL DEFAULT 0,
+  revision_number VARCHAR(50) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   deleted_at DATETIME NULL,
+  registration_date DATE NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NULL,
-  UNIQUE KEY uq_members_email (email)
+  UNIQUE KEY uq_members_email (email),
+  KEY idx_members_member_number (member_number)
 ) ENGINE=InnoDB;
 
 -- Memberships (iscrizioni annuali)
@@ -41,6 +51,7 @@ CREATE TABLE IF NOT EXISTS memberships (
   member_id INT UNSIGNED NOT NULL,
   year INT NOT NULL,
   status ENUM('pending','regular','overdue') NOT NULL DEFAULT 'pending',
+  renewal_date DATE NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_memberships_member_year (member_id, year),
   CONSTRAINT fk_memberships_member

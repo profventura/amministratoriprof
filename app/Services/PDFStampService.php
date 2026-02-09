@@ -37,6 +37,15 @@ class PDFStampService {
     $bYear = !empty($opts['year_bold']) ? 'B' : '';
     $yearVal = $opts['year_value'] ?? date('Y');
 
+    // Configurazione Argomento/Titolo Corso (opzionale)
+    $xCourse = $opts['course_title_x'] ?? 0;
+    $yCourse = $opts['course_title_y'] ?? 0;
+    $fsCourse = $opts['course_title_font_size'] ?? 16;
+    $cCourse = self::hex2rgb($opts['course_title_color'] ?? '#000000');
+    $fCourse = $opts['course_title_font_family'] ?? 'Arial';
+    $bCourse = !empty($opts['course_title_bold']) ? 'B' : '';
+    $courseVal = $opts['course_title_value'] ?? '';
+
     try {
         $pdf = new Fpdi();
         $pageCount = $pdf->setSourceFile($templateAbsPath);
@@ -90,8 +99,24 @@ class PDFStampService {
                 $pdf->SetFont($font, $style, $size);
                 $pdf->SetTextColor($color[0], $color[1], $color[2]);
                 $w = $pdf->GetStringWidth($text);
-                $pdf->SetXY($x - ($w / 2), $y);
-                $pdf->Write(0, $text);
+                
+                // Se il testo è multiriga (contiene \n), dobbiamo gestirlo
+                if (strpos($text, "\n") !== false) {
+                    $lines = explode("\n", $text);
+                    $lineHeight = $size * 0.4; // Approssimazione line height in mm
+                    $totalHeight = count($lines) * $lineHeight;
+                    $startY = $y - ($totalHeight / 2) + ($lineHeight / 2); // Centrato verticalmente
+                    
+                    foreach ($lines as $i => $line) {
+                        $wLine = $pdf->GetStringWidth($line);
+                        $pdf->SetXY($x - ($wLine / 2), $startY + ($i * $lineHeight));
+                        $pdf->Write(0, $line);
+                    }
+                } else {
+                    // Testo singola riga
+                    $pdf->SetXY($x - ($w / 2), $y);
+                    $pdf->Write(0, $text);
+                }
             }
         };
 
@@ -106,6 +131,9 @@ class PDFStampService {
 
         // Stampa Anno
         $printCentered(strval($yearVal), $xYear, $yYear, $fYear, $bYear, $fsYear, $cYear);
+
+        // Stampa Argomento/Titolo Corso
+        $printCentered($courseVal, $xCourse, $yCourse, $fCourse, $bCourse, $fsCourse, $cCourse);
 
         $dir = dirname($outputAbsPath);
         if (!is_dir($dir)) { mkdir($dir, 0777, true); }

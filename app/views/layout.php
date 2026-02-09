@@ -38,7 +38,7 @@ $config = require __DIR__ . '/../config.php';
                     <img src="<?php echo Helpers::url('public/images/logos/logo_v3_scuro.png'); ?>" width="400" alt="TechLab PC" />
                   </a>
                   <h2 class="mb-2 mt-4 fs-7 fw-bolder">Sign In</h2>
-                  <p class="mb-9">Accedi al TechLab PC</p>
+                  <p class="mb-9">Accedi al Gestionale Di Amministratori Professionisti</p>
                   <?php if (isset($error)) { ?><div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div><?php } ?>
                   <?php
                   $viewFile = __DIR__ . '/' . $template . '.php';
@@ -56,11 +56,10 @@ $config = require __DIR__ . '/../config.php';
                 <div class="row justify-content-center w-100">
                   <div class="col-lg-6">
                     <h2 class="text-white fs-10 mb-3 lh-sm">
-                      Benvenuto al <br />  TechLab PC
+                      Benvenuto al <br />  GestAP
                     </h2>
                     <span class="opacity-75 fs-4 text-white d-block mb-3">
-                      Gestionale Azienda Simulata <br>
-                      I Informatico a.s. 2025/2026
+                      Gestionale Amministratori Professionisti 
                     </span>
                   </div>
                 </div>
@@ -198,8 +197,8 @@ $config = require __DIR__ . '/../config.php';
       </header>
       
 
-      <div class="body-wrapper">
-        <div class="container-fluid">
+      <div class="body-wrapper d-flex flex-column" style="min-height: calc(100vh - 70px);">
+        <div class="container-fluid flex-grow-1">
           <?php $flashes = \App\Core\Helpers::getFlashes(); ?>
           <?php if (!empty($flashes)) { ?>
           <div class="modal fade" id="flashModal" tabindex="-1" aria-hidden="true">
@@ -290,6 +289,11 @@ $config = require __DIR__ . '/../config.php';
           if (file_exists($viewFile)) { require $viewFile; } else { echo 'View non trovata'; }
           ?>
         </div>
+        <div class="py-3 px-3 text-center mt-auto">
+          <div class="bg-white rounded p-3 shadow-sm">
+            <p class="mb-0 fs-4">Design and Developed by <a href="https://techlabsomaschi.it/" target="_blank" class="pe-1 text-primary text-decoration-underline">TechLabSomaschi</a></p>
+          </div>
+        </div>
       </div>
     </div>
     <?php } ?>
@@ -312,6 +316,7 @@ $config = require __DIR__ . '/../config.php';
     })();
   </script>
   <script src="<?php echo Helpers::url('public/js/highlights/highlight.min.js'); ?>"></script>
+  <script src="<?php echo Helpers::url('public/libs/jquery/jquery-3.7.1.min.js'); ?>"></script>
   <?php
     $dtTemplates = [
       'students/index',
@@ -330,7 +335,6 @@ $config = require __DIR__ . '/../config.php';
   ?>
   <link rel="stylesheet" href="<?php echo Helpers::url('public/libs/datatables/jquery.dataTables.min.css'); ?>">
   <link rel="stylesheet" href="<?php echo Helpers::url('public/libs/datatables-buttons/buttons.dataTables.min.css'); ?>">
-  <script src="<?php echo Helpers::url('public/libs/jquery/jquery-3.7.1.min.js'); ?>"></script>
   <script src="<?php echo Helpers::url('public/libs/datatables/jquery.dataTables.min.js'); ?>"></script>
   <script src="<?php echo Helpers::url('public/libs/datatables-buttons/dataTables.buttons.min.js'); ?>"></script>
   <script src="<?php echo Helpers::url('public/libs/datatables-buttons/buttons.html5.min.js'); ?>"></script>

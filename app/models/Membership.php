@@ -21,9 +21,26 @@ class Membership extends Model {
     return $st->fetch();
   }
   public function byYear($year) {
-    $st = $this->pdo->prepare('SELECT m.id, m.member_id, m.year, m.status, mb.first_name, mb.last_name, mb.email
+    $st = $this->pdo->prepare('SELECT m.id, m.member_id, m.year, m.status, m.renewal_date, mb.first_name, mb.last_name, mb.email
       FROM memberships m JOIN members mb ON mb.id=m.member_id WHERE m.year=? AND mb.deleted_at IS NULL ORDER BY mb.last_name, mb.first_name');
     $st->execute([(int)$year]);
     return $st->fetchAll();
+  }
+  public function update($id, $data) {
+    $st = $this->pdo->prepare('UPDATE memberships SET status=?, renewal_date=? WHERE id=?');
+    $st->execute([
+      $data['status'],
+      $data['renewal_date'] ?: null,
+      (int)$id
+    ]);
+  }
+  public function delete($id) {
+    $st = $this->pdo->prepare('DELETE FROM memberships WHERE id=?');
+    $st->execute([(int)$id]);
+  }
+  public function findWithMember($id) {
+    $st = $this->pdo->prepare('SELECT m.*, mb.first_name, mb.last_name FROM memberships m JOIN members mb ON mb.id=m.member_id WHERE m.id=?');
+    $st->execute([(int)$id]);
+    return $st->fetch();
   }
 }

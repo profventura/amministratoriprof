@@ -23,11 +23,11 @@ INSERT INTO cash_categories (name, type, active) VALUES
 ('Spese generiche', 'expense', 1);
 
 -- Members
-INSERT INTO members (first_name, last_name, email, phone, city, birth_date, tax_code, status, created_at)
+INSERT INTO members (member_number, first_name, last_name, studio_name, email, phone, mobile_phone, address, city, province, zip_code, birth_date, tax_code, billing_cf_piva, is_revisor, revision_number, status, registration_date, created_at)
 VALUES
-('Mario', 'Rossi', 'mario.rossi@example.com', '+39 333111222', 'Milano', '1985-04-12', 'RSSMRA85D12F205X', 'active', NOW()),
-('Giulia', 'Bianchi', 'giulia.bianchi@example.com', '+39 333222333', 'Torino', '1990-11-02', 'BNCGLL90S42L219Z', 'active', NOW()),
-('Luca', 'Verdi', 'luca.verdi@example.com', '+39 333333444', 'Roma', '1982-07-20', 'VRDLCU82L20H501Z', 'inactive', NOW());
+('001', 'Mario', 'Rossi', 'Studio Rossi', 'mario.rossi@example.com', '+39 02111222', '+39 333111222', 'Via Roma 10', 'Milano', 'MI', '20100', '1985-04-12', 'RSSMRA85D12F205X', 'RSSMRA85D12F205X', 1, 'REV-001', 'active', '2023-01-01', NOW()),
+('002', 'Giulia', 'Bianchi', NULL, 'giulia.bianchi@example.com', NULL, '+39 333222333', 'Corso Italia 5', 'Torino', 'TO', '10100', '1990-11-02', 'BNCGLL90S42L219Z', NULL, 0, NULL, 'active', '2023-02-15', NOW()),
+('003', 'Luca', 'Verdi', 'Verdi Admin', 'luca.verdi@example.com', '+39 06999888', '+39 333333444', 'Piazza Navona 1', 'Roma', 'RM', '00100', '1982-07-20', 'VRDLCU82L20H501Z', '12345678901', 1, 'REV-002', 'inactive', '2022-05-10', NOW());
 
 -- Memberships for current and previous year
 INSERT INTO memberships (member_id, year, status, created_at)
