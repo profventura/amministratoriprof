@@ -3,6 +3,10 @@
 
 # Cartelle nella root
 /docs/
+<<<<<<< HEAD
+=======
+/database/
+>>>>>>> e5ca002da2271abb7fc92d15db0ed315589528a0
 
 # File dentro app
 /app/config.php
