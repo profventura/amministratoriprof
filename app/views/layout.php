@@ -94,6 +94,12 @@ $config = require __DIR__ . '/../config.php';
               </a>
             </li>
             <li class="sidebar-item">
+              <a class="sidebar-link" href="<?php echo Helpers::url('/portal/dashboard'); ?>" target="_blank" aria-expanded="false">
+                <iconify-icon icon="solar:link-circle-line-duotone"></iconify-icon>
+                <span class="hide-menu">Area Soci (Anteprima)</span>
+              </a>
+            </li>
+            <li class="sidebar-item">
               <a class="sidebar-link" href="<?php echo Helpers::url('/memberships'); ?>" aria-expanded="false">
                 <iconify-icon icon="solar:diploma-verified-outline"></iconify-icon>
                 <span class="hide-menu">Iscrizioni</span>
@@ -139,6 +145,12 @@ $config = require __DIR__ . '/../config.php';
                   <a href="<?php echo Helpers::url('/settings/email'); ?>" class="sidebar-link">
                     <span class="icon-small"></span>
                     <span class="hide-menu">Email</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings/import-export'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Import/Export</span>
                   </a>
                 </li>
               </ul>

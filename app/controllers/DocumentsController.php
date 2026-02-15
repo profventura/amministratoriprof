@@ -7,7 +7,19 @@ class DocumentsController {
   public function download($id) {
     Auth::require();
     $doc = (new Document())->find((int)$id);
-    if (!$doc) { http_response_code(404); echo 'Documento non trovato'; return; }
+    if (!$doc) { http_response_code(404); echo 'Documento non trovato'; return;   public function generateMembershipCertificateMassive($year, $ids = []) {
+      Auth::require();
+      
+      // Istanziamo il controller certificati per usare la sua logica
+      $certController = new CertificatesController();
+      
+      // Simuliamo la richiesta POST che si aspetterebbe generateMass
+      // Ma dobbiamo chiamare una funzione che accetti gli ID, non solo l'anno
+      // Per ora, iteriamo su ogni ID e generiamo (non ottimale ma funzionale)
+      // Oppure meglio: creiamo un metodo ad hoc in CertificatesController
+      
+      $certController->generateMassByIds($year, $ids);
+  }
     $rel = str_replace(['\\', '..'], ['/', ''], $doc['file_path']);
     $abs = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $rel;
     if (!is_file($abs)) { http_response_code(404); echo 'File non presente'; return; }

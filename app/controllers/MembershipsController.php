@@ -38,6 +38,8 @@ class MembershipsController {
 
   public function delete($id) {
     Auth::require();
+    if (!Helpers::validateCSRF()) { return; }
+    
     $m = new Membership();
     $row = $m->find((int)$id);
     if ($row) {
@@ -47,5 +49,44 @@ class MembershipsController {
     } else {
         Helpers::redirect('/memberships');
     }
+  }
+
+  public function bulkAction() {
+      Auth::require();
+      if (!Helpers::validateCSRF()) { return; }
+
+      $action = $_POST['action'] ?? '';
+      $ids = $_POST['selected_ids'] ?? [];
+      $year = (int)($_POST['year'] ?? date('Y'));
+
+      if (empty($ids)) {
+          Helpers::addFlash('warning', 'Nessuna iscrizione selezionata.');
+          Helpers::redirect('/memberships?year='.$year);
+          return;
+      }
+
+      switch ($action) {
+          case 'generate_certificate':
+              // Generazione certificati per gli ID selezionati
+              $docController = new DocumentsController();
+              $docController->generateMembershipCertificateMassive($year, $ids);
+              return; // Il controller gestirà il download o redirect
+
+          case 'delete':
+              $m = new Membership();
+              $count = 0;
+              foreach ($ids as $id) {
+                  $m->delete((int)$id);
+                  $count++;
+              }
+              Helpers::addFlash('success', "$count iscrizioni eliminate.");
+              Helpers::redirect('/memberships?year='.$year);
+              break;
+              
+          default:
+              Helpers::addFlash('warning', 'Azione non riconosciuta.');
+              Helpers::redirect('/memberships?year='.$year);
+              break;
+      }
   }
 }

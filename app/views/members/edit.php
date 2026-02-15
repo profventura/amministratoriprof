@@ -26,9 +26,13 @@
       <label class="form-label">Codice Fiscale</label>
       <input type="text" name="tax_code" class="form-control" value="<?php echo htmlspecialchars($row['tax_code']); ?>">
     </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label">CF / P.IVA Fatturazione</label>
-      <input type="text" name="billing_cf_piva" class="form-control" value="<?php echo htmlspecialchars($row['billing_cf_piva'] ?? ''); ?>">
+    <div class="col-md-3 mb-3">
+      <label class="form-label">CF Fatturazione</label>
+      <input type="text" name="billing_cf" class="form-control" value="<?php echo htmlspecialchars($row['billing_cf'] ?? ''); ?>">
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label">P.IVA Fatturazione</label>
+      <input type="text" name="billing_piva" class="form-control" value="<?php echo htmlspecialchars($row['billing_piva'] ?? ''); ?>">
     </div>
     <div class="col-md-3 mb-3">
       <label class="form-label">Revisore (54h)?</label>
@@ -40,6 +44,18 @@
     <div class="col-md-3 mb-3">
       <label class="form-label">N. Revisione</label>
       <input type="text" name="revision_number" class="form-control" value="<?php echo htmlspecialchars($row['revision_number'] ?? ''); ?>">
+    </div>
+
+    <!-- Accesso Area Riservata -->
+    <h5 class="mb-3 mt-4">Accesso Area Riservata</h5>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-control" value="<?php echo htmlspecialchars($row['username'] ?? ''); ?>" disabled readonly>
+      <div class="form-text">L'username non è modificabile.</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Password</label>
+      <input type="password" name="password" class="form-control" placeholder="Lasciare vuoto per non modificare">
     </div>
 
     <!-- Contatti -->

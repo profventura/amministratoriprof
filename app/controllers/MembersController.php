@@ -4,7 +4,54 @@ use App\Core\Auth;
 use App\Core\CSRF;
 use App\Core\Helpers;
 use App\Models\Member;
+use App\Controllers\CertificatesController;
+
 class MembersController {
+  public function bulkAction() {
+    Auth::require();
+    if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
+    
+    $action = $_POST['action'] ?? '';
+    $ids = $_POST['selected_ids'] ?? [];
+    
+    if (empty($ids)) {
+        Helpers::addFlash('warning', 'Seleziona almeno un socio');
+        Helpers::redirect('/members');
+        return;
+    }
+    
+    switch ($action) {
+        case 'generate_certificate':
+            // Delega al CertificatesController
+            // Poiché generateSelected legge da $_POST, possiamo istanziarlo e chiamarlo.
+            // Attenzione: generateSelected fa Auth::require() e redirect finale.
+            (new CertificatesController())->generateSelected();
+            break;
+            
+        case 'generate_attestato':
+            // Placeholder per il futuro
+            Helpers::addFlash('info', 'Funzionalità Attestato non ancora implementata per selezione multipla.');
+            Helpers::redirect('/members');
+            break;
+
+        case 'delete':
+            $m = new Member();
+            $count = 0;
+            foreach ($ids as $id) {
+                $m->softDelete((int)$id);
+                $count++;
+            }
+            Helpers::addFlash('success', "$count soci eliminati.");
+            Helpers::redirect('/members');
+            break;
+            
+        default:
+            Helpers::addFlash('warning', 'Azione non valida');
+            Helpers::redirect('/members');
+            break;
+    }
+  }
+
   public function index() {
     Auth::require();
     $m = new Member();
@@ -19,7 +66,23 @@ class MembersController {
     $pdo = \App\Core\DB::conn();
     $totalMembers = $pdo->query("SELECT COUNT(*) c FROM members WHERE deleted_at IS NULL")->fetch()['c'];
     $activeMembers = $pdo->query("SELECT COUNT(*) c FROM members WHERE deleted_at IS NULL AND status='active'")->fetch()['c'];
-    $newMembersYear = $pdo->query("SELECT COUNT(*) c FROM members WHERE deleted_at IS NULL AND YEAR(registration_date) = " . date('Y'))->fetch()['c'];
+    // FIX: registration_date potrebbe non esistere ancora nel DB remoto se non è stata eseguita la migrazione.
+    // Usiamo created_at come fallback se registration_date non esiste, oppure gestiamo l'errore.
+    // O meglio, assicuriamoci che la colonna esista prima di interrogarla, o usiamo try-catch.
+    
+    // Per evitare l'errore bloccante in produzione se manca la colonna, verifichiamo se esiste la colonna
+    // O più semplicemente, avvolgiamo in try-catch e in caso di errore usiamo created_at o 0.
+    
+    try {
+        $newMembersYear = $pdo->query("SELECT COUNT(*) c FROM members WHERE deleted_at IS NULL AND YEAR(registration_date) = " . date('Y'))->fetch()['c'];
+    } catch (\PDOException $e) {
+        // Se registration_date non esiste (es. errore 42S22), fallback su created_at
+        if (strpos($e->getMessage(), 'Unknown column') !== false) {
+             $newMembersYear = $pdo->query("SELECT COUNT(*) c FROM members WHERE deleted_at IS NULL AND YEAR(created_at) = " . date('Y'))->fetch()['c'];
+        } else {
+            throw $e;
+        }
+    }
     
     $stats = [
         'total' => $totalMembers,
@@ -50,6 +113,7 @@ class MembersController {
       'last_name' => trim($_POST['last_name'] ?? ''),
       'studio_name' => trim($_POST['studio_name'] ?? ''),
       'email' => trim($_POST['email'] ?? ''),
+      'username' => trim($_POST['username'] ?? ''),
       'phone' => trim($_POST['phone'] ?? ''),
       'mobile_phone' => trim($_POST['mobile_phone'] ?? ''),
       'address' => trim($_POST['address'] ?? ''),
@@ -58,20 +122,57 @@ class MembersController {
       'zip_code' => trim($_POST['zip_code'] ?? ''),
       'birth_date' => $_POST['birth_date'] ?: null, // Assicura NULL se stringa vuota
       'tax_code' => trim($_POST['tax_code'] ?? ''),
-      'billing_cf_piva' => trim($_POST['billing_cf_piva'] ?? ''),
+      'billing_cf' => trim($_POST['billing_cf'] ?? ''),
+      'billing_piva' => trim($_POST['billing_piva'] ?? ''),
       'is_revisor' => isset($_POST['is_revisor']) ? 1 : 0,
       'revision_number' => trim($_POST['revision_number'] ?? ''),
       'status' => trim($_POST['status'] ?? 'active'),
       'registration_date' => $_POST['registration_date'] ?: null
     ];
     
+    // Gestione Password
+    $password = $_POST['password'] ?? '';
+    if (!empty($password)) {
+        $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+    }
+    
     if ($data['first_name'] === '' || $data['last_name'] === '') {
       Helpers::addFlash('danger', 'Nome e Cognome sono obbligatori');
       Helpers::redirect('/members/create');
       return;
     }
+
+    // Calcolo automatico Username: n.cognome (solo minuscolo, rimuovi spazi e caratteri speciali)
+    $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['first_name']));
+    $cleanSurname = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['last_name']));
+    $baseUsername = substr($cleanName, 0, 1) . '.' . $cleanSurname;
     
+    // Gestiamo unicità username
+    $username = $baseUsername;
+    $counter = 1;
+    $pdo = \App\Core\DB::conn();
+    while (true) {
+        $exists = $pdo->prepare("SELECT id FROM members WHERE username = ? AND deleted_at IS NULL");
+        $exists->execute([$username]);
+        if (!$exists->fetch()) break;
+        $username = $baseUsername . $counter;
+        $counter++;
+    }
+    $data['username'] = $username;
+
     $m = new Member();
+    // Check username duplicato (già gestito sopra ma lasciamo per sicurezza)
+    if (!empty($data['username'])) {
+        $exists = $pdo->prepare("SELECT id FROM members WHERE username = ? AND deleted_at IS NULL");
+        $exists->execute([$data['username']]);
+        if ($exists->fetch()) {
+             // Non dovrebbe accadere col while sopra
+             Helpers::addFlash('danger', 'Errore generazione username');
+             Helpers::redirect('/members/create');
+             return;
+        }
+    }
+    
     $id = $m->create($data);
     Helpers::addFlash('success', 'Socio creato correttamente');
     Helpers::redirect('/members/'.$id);
@@ -95,6 +196,7 @@ class MembersController {
       'last_name' => trim($_POST['last_name'] ?? ''),
       'studio_name' => trim($_POST['studio_name'] ?? ''),
       'email' => trim($_POST['email'] ?? ''),
+      // Username NON aggiornabile da post, rimane quello esistente o viene generato se mancante (legacy)
       'phone' => trim($_POST['phone'] ?? ''),
       'mobile_phone' => trim($_POST['mobile_phone'] ?? ''),
       'address' => trim($_POST['address'] ?? ''),
@@ -103,12 +205,43 @@ class MembersController {
       'zip_code' => trim($_POST['zip_code'] ?? ''),
       'birth_date' => $_POST['birth_date'] ?: null,
       'tax_code' => trim($_POST['tax_code'] ?? ''),
-      'billing_cf_piva' => trim($_POST['billing_cf_piva'] ?? ''),
+      'billing_cf' => trim($_POST['billing_cf'] ?? ''),
+      'billing_piva' => trim($_POST['billing_piva'] ?? ''),
       'is_revisor' => isset($_POST['is_revisor']) ? 1 : 0,
       'revision_number' => trim($_POST['revision_number'] ?? ''),
       'status' => trim($_POST['status'] ?? 'active'),
       'registration_date' => $_POST['registration_date'] ?: null
     ];
+    
+    // Recupera utente attuale per preservare username se non settato o per evitare modifiche
+    $pdo = \App\Core\DB::conn();
+    $current = $pdo->query("SELECT username FROM members WHERE id=".(int)$id)->fetch();
+    
+    if (empty($current['username'])) {
+         // Genera se manca
+         $cleanName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['first_name']));
+         $cleanSurname = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $data['last_name']));
+         $baseUsername = substr($cleanName, 0, 1) . '.' . $cleanSurname;
+         $username = $baseUsername;
+         $counter = 1;
+         while (true) {
+            $exists = $pdo->prepare("SELECT id FROM members WHERE username = ? AND id <> ? AND deleted_at IS NULL");
+            $exists->execute([$username, $id]);
+            if (!$exists->fetch()) break;
+            $username = $baseUsername . $counter;
+            $counter++;
+         }
+         $data['username'] = $username;
+    } else {
+        // Mantieni esistente
+        $data['username'] = $current['username'];
+    }
+
+    // Gestione Password in Update
+    $password = $_POST['password'] ?? '';
+    if (!empty($password)) {
+        $data['password_hash'] = password_hash($password, PASSWORD_DEFAULT);
+    }
     
     $m = new Member();
     $m->update((int)$id, $data);

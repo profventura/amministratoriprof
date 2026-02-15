@@ -39,14 +39,20 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h3 class="mb-0">Elenco Iscrizioni</h3>
   <div class="d-flex gap-2">
-    <form class="d-flex" method="get" action="<?php echo \App\Core\Helpers::url('/memberships'); ?>">
+    <form id="bulkForm" action="<?php echo \App\Core\Helpers::url('/memberships/bulk-action'); ?>" method="post" class="d-flex gap-2">
+        <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+        <input type="hidden" name="year" value="<?php echo (int)$year; ?>">
+        <select name="action" class="form-select" style="width: 200px;" required>
+            <option value="">Azioni di gruppo...</option>
+            <option value="generate_certificate">Genera Certificati</option>
+            <option value="delete">Elimina</option>
+        </select>
+        <button type="submit" class="btn btn-outline-secondary">Applica</button>
+    </form>
+    
+    <form class="d-flex ms-3" method="get" action="<?php echo \App\Core\Helpers::url('/memberships'); ?>">
       <input type="number" class="form-control me-2" name="year" value="<?php echo (int)$year; ?>" style="width: 100px;">
       <button class="btn btn-outline-primary">Cambia Anno</button>
-    </form>
-    <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/membership-certificate/generate-mass'); ?>">
-      <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-      <input type="hidden" name="year" value="<?php echo (int)$year; ?>">
-      <button class="btn btn-primary">Genera certificati massivi</button>
     </form>
   </div>
 </div>
@@ -55,6 +61,7 @@
   <table id="datatable" class="table table-striped table-bordered text-nowrap">
     <thead class="table-light">
       <tr>
+        <th width="40"><input type="checkbox" id="selectAll" class="form-check-input"></th>
         <th>Cognome</th>
         <th>Nome</th>
         <th>Email</th>
@@ -66,6 +73,7 @@
     <tbody>
       <?php foreach ($rows as $r) { ?>
       <tr>
+        <td><input type="checkbox" name="selected_ids[]" value="<?php echo $r['id']; ?>" class="form-check-input" form="bulkForm"></td>
         <td><?php echo htmlspecialchars($r['last_name']); ?></td>
         <td><?php echo htmlspecialchars($r['first_name']); ?></td>
         <td><?php echo htmlspecialchars($r['email']); ?></td>
@@ -81,8 +89,10 @@
         <td><?php echo htmlspecialchars($r['renewal_date'] ?? '-'); ?></td>
         <td>
           <a href="<?php echo \App\Core\Helpers::url('/memberships/'.$r['id'].'/edit'); ?>" class="btn btn-sm btn-outline-warning">Modifica</a>
-          <!-- Elimina (da implementare nel controller se serve) -->
-          <button type="button" class="btn btn-sm btn-outline-danger ms-1" onclick="if(confirm('Eliminare questa iscrizione?')) location.href='<?php echo \App\Core\Helpers::url('/memberships/'.$r['id'].'/delete'); ?>'">Elimina</button>
+          <form action="<?php echo \App\Core\Helpers::url('/memberships/' . $r['id'] . '/delete'); ?>" method="post" class="d-inline delete-form">
+            <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Elimina</button>
+          </form>
         </td>
       </tr>
       <?php } ?>
@@ -90,10 +100,77 @@
   </table>
 </div>
 
+<!-- Modale di Conferma Eliminazione -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma Eliminazione</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="deleteConfirmMessage">Sei sicuro di voler procedere?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function(){
     if (!window.jQuery) return;
     var $ = window.jQuery;
+    
+    // Variabile per memorizzare il form da inviare
+    var formToSubmit = null;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    
+    // Gestione Select All
+    $('#selectAll').on('click', function() {
+        var rows = $('#datatable').DataTable().rows({ 'search': 'applied' }).nodes();
+        $('input[type="checkbox"]', rows).prop('checked', this.checked);
+    });
+
+    // Gestione eliminazione singola
+    $(document).on('submit', 'form.delete-form', function(e){
+        e.preventDefault();
+        formToSubmit = this;
+        $('#deleteConfirmMessage').text('Sei sicuro di voler eliminare questa iscrizione?');
+        deleteModal.show();
+    });
+
+    // Gestione azione massiva
+    $('#bulkForm').on('submit', function(e){
+        var action = $(this).find('select[name="action"]').val();
+        
+        // Conta i selezionati
+        var count = $('input[name="selected_ids[]"]:checked').length;
+        if (count === 0) {
+            alert('Seleziona almeno una iscrizione.');
+            e.preventDefault();
+            return;
+        }
+
+        if (action === 'delete') {
+            e.preventDefault();
+            formToSubmit = this;
+            $('#deleteConfirmMessage').text('Sei sicuro di voler eliminare ' + count + ' iscrizioni selezionate?');
+            deleteModal.show();
+        } 
+        // Per 'generate_certificate' o altre azioni non distruttive, procedi direttamente
+    });
+
+    // Click su conferma nel modale
+    $('#confirmDeleteBtn').on('click', function(){
+        if (formToSubmit) {
+            formToSubmit.submit();
+        }
+        deleteModal.hide();
+    });
+
     $('#datatable').DataTable({
         responsive: true,
         deferRender: true,

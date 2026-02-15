@@ -1,0 +1,8 @@
+# File nella root
+/.htaccess
+
+# Cartelle nella root
+/docs/
+
+# File dentro app
+/app/config.php

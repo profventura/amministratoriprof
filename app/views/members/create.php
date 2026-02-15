@@ -26,9 +26,13 @@
       <label class="form-label">Codice Fiscale</label>
       <input type="text" name="tax_code" class="form-control">
     </div>
-    <div class="col-md-6 mb-3">
-      <label class="form-label">CF / P.IVA Fatturazione</label>
-      <input type="text" name="billing_cf_piva" class="form-control">
+    <div class="col-md-3 mb-3">
+      <label class="form-label">CF Fatturazione</label>
+      <input type="text" name="billing_cf" class="form-control">
+    </div>
+    <div class="col-md-3 mb-3">
+      <label class="form-label">P.IVA Fatturazione</label>
+      <input type="text" name="billing_piva" class="form-control">
     </div>
     <div class="col-md-3 mb-3">
       <label class="form-label">Revisore (54h)?</label>
@@ -40,6 +44,18 @@
     <div class="col-md-3 mb-3">
       <label class="form-label">N. Revisione</label>
       <input type="text" name="revision_number" class="form-control">
+    </div>
+
+    <!-- Accesso Area Riservata -->
+    <h5 class="mb-3 mt-4">Accesso Area Riservata</h5>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Username</label>
+      <input type="text" class="form-control" placeholder="Generato automaticamente (n.cognome)" disabled readonly>
+      <div class="form-text">L'username verrà generato automaticamente al salvataggio (es. m.rossi).</div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <label class="form-label">Password</label>
+      <input type="password" name="password" class="form-control" placeholder="Opzionale">
     </div>
 
     <!-- Contatti -->

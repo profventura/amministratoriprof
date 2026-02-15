@@ -51,6 +51,8 @@ use App\Controllers\MembersController;
 use App\Controllers\MembershipsController;
 use App\Controllers\APPaymentsController;
 use App\Controllers\DocumentsController;
+use App\Controllers\PortalController;
+
 $router = new Router();
 $pdoBootstrap = DB::conn();
 // Ensure superuser admin exists in users
@@ -59,6 +61,18 @@ if ($adminExists === 0) {
   $stmt = $pdoBootstrap->prepare('INSERT INTO users (username,password_hash,role,active) VALUES (?,?,?,?)');
   $stmt->execute(['admin',password_hash('password', PASSWORD_DEFAULT),'admin',1]);
 }
+
+// Rotte Area Soci (Portal)
+$router->get('/portal/login', [PortalController::class, 'loginForm']);
+$router->post('/portal/login', [PortalController::class, 'login']);
+$router->get('/portal/logout', [PortalController::class, 'logout']);
+$router->get('/portal/dashboard', [PortalController::class, 'dashboard']);
+$router->get('/portal/profile', [PortalController::class, 'profile']);
+$router->post('/portal/profile', [PortalController::class, 'updateProfile']);
+$router->get('/portal/payments', [PortalController::class, 'payments']);
+$router->post('/portal/courses/{id}/join', [PortalController::class, 'joinCourse']);
+
+// Rotte Admin
 $router->get('/login', [AuthController::class,'loginForm']);
 $router->post('/login', [AuthController::class,'login']);
 $router->get('/logout', [AuthController::class,'logout']);
@@ -100,6 +114,7 @@ $router->get('/admin/migrate', function(){
 });
 // Soci (members)
 $router->get('/members', [MembersController::class,'index']);
+$router->post('/members/bulk-action', [MembersController::class,'bulkAction']);
 $router->get('/members/create', [MembersController::class,'createForm']);
 $router->post('/members', [MembersController::class,'store']);
 $router->get('/members/{id}', [MembersController::class,'show']);
@@ -108,9 +123,10 @@ $router->post('/members/{id}/update', [MembersController::class,'update']);
 $router->post('/members/{id}/delete', [MembersController::class,'delete']);
 // Iscrizioni annuali
 $router->get('/memberships', [MembershipsController::class,'index']);
+$router->post('/memberships/bulk-action', [MembershipsController::class,'bulkAction']);
 $router->get('/memberships/{id}/edit', [MembershipsController::class,'edit']);
 $router->post('/memberships/{id}/edit', [MembershipsController::class,'update']);
-$router->get('/memberships/{id}/delete', [MembershipsController::class,'delete']); // Usiamo GET per link semplice, o POST se preferisci form
+$router->post('/memberships/{id}/delete', [MembershipsController::class,'delete']);
 
 // Pagamenti AP (quote)
 $router->get('/ap/payments/create', [APPaymentsController::class,'createForm']);
@@ -140,8 +156,13 @@ $router->get('/settings/attestati', [SettingsController::class,'attestati']);
 $router->post('/settings/attestati/update-template', [SettingsController::class,'updateAttestatiTemplate']);
 $router->post('/settings/attestati/update-stamp', [SettingsController::class,'updateAttestatiStamp']);
 $router->post('/settings/attestati/preview-stamp', [SettingsController::class,'previewAttestatiStamp']);
+$router->get('/settings/import-export', [SettingsController::class,'importExport']);
+$router->get('/settings/export', [SettingsController::class,'export']);
+$router->post('/settings/import', [SettingsController::class,'import']);
+$router->get('/settings/import/sample', [SettingsController::class,'downloadSampleCsv']);
 $router->get('/settings/email', [SettingsController::class,'email']);
 $router->post('/settings/email/update', [SettingsController::class,'updateEmailSettings']);
+$router->post('/settings/update-public-url', [SettingsController::class,'updatePublicUrl']);
 $router->post('/settings/update-template', [SettingsController::class,'updateTemplate']);
 $router->post('/settings/test-docx', [SettingsController::class,'testDocx']);
 $router->post('/settings/update-stamp', [SettingsController::class,'updateStamp']);

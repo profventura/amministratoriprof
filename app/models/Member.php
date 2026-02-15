@@ -24,39 +24,48 @@ class Member extends Model {
   }
   public function create($data) {
     $fields = [
-      'member_number', 'first_name', 'last_name', 'studio_name', 'email', 'phone', 'mobile_phone',
-      'address', 'city', 'province', 'zip_code', 'birth_date', 'tax_code', 'billing_cf_piva',
+      'member_number', 'first_name', 'last_name', 'studio_name', 'email', 'username', 'password_hash', 'phone', 'mobile_phone',
+      'address', 'city', 'province', 'zip_code', 'birth_date', 'tax_code', 'billing_cf', 'billing_piva',
       'is_revisor', 'revision_number', 'status', 'registration_date'
     ];
-    $cols = implode(',', $fields);
-    $placeholders = implode(',', array_fill(0, count($fields), '?'));
-    
-    $sql = "INSERT INTO members ($cols, created_at) VALUES ($placeholders, NOW())";
-    $st = $this->pdo->prepare($sql);
-    
+    $cols = [];
+    $placeholders = [];
     $values = [];
+    
     foreach ($fields as $f) {
-      $values[] = $data[$f] ?? null;
+        // Inserisci solo se la chiave esiste nell'array $data
+        if (array_key_exists($f, $data)) {
+            $cols[] = $f;
+            $placeholders[] = '?';
+            $values[] = $data[$f];
+        }
     }
     
+    $sql = "INSERT INTO members (" . implode(',', $cols) . ", created_at) VALUES (" . implode(',', $placeholders) . ", NOW())";
+    $st = $this->pdo->prepare($sql);
     $st->execute($values);
     return $this->pdo->lastInsertId();
   }
+  
   public function update($id, $data) {
     $fields = [
-      'member_number', 'first_name', 'last_name', 'studio_name', 'email', 'phone', 'mobile_phone',
-      'address', 'city', 'province', 'zip_code', 'birth_date', 'tax_code', 'billing_cf_piva',
+      'member_number', 'first_name', 'last_name', 'studio_name', 'email', 'username', 'password_hash', 'phone', 'mobile_phone',
+      'address', 'city', 'province', 'zip_code', 'birth_date', 'tax_code', 'billing_cf', 'billing_piva',
       'is_revisor', 'revision_number', 'status', 'registration_date'
     ];
     
     $sets = [];
     $values = [];
     foreach ($fields as $f) {
-      $sets[] = "$f = ?";
-      $values[] = $data[$f] ?? null;
+      if (array_key_exists($f, $data)) {
+          $sets[] = "$f = ?";
+          $values[] = $data[$f];
+      }
     }
-    $values[] = $id; // For WHERE id=?
     
+    if (empty($sets)) return; // Nessun campo da aggiornare
+    
+    $values[] = $id;
     $sql = "UPDATE members SET " . implode(', ', $sets) . ", updated_at=NOW() WHERE id=? AND deleted_at IS NULL";
     $st = $this->pdo->prepare($sql);
     $st->execute($values);

@@ -1,5 +1,17 @@
 <div class="card">
   <div class="card-body">
+    <h4 class="mb-3">Indirizzo Pubblico Area Soci</h4>
+    <p class="card-text">Inserisci l'URL completo (es. <code>https://www.miosito.it/portal</code>) dove sarà raggiungibile l'area soci pubblica. Questo link verrà usato nelle email e nei documenti.</p>
+    <form method="post" action="<?php echo \App\Core\Helpers::url('/settings/update-public-url'); ?>">
+      <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+      <div class="input-group mb-3">
+        <span class="input-group-text">URL Pubblico</span>
+        <input type="url" name="public_url" class="form-control" placeholder="https://..." value="<?php echo htmlspecialchars($row['public_url'] ?? ''); ?>">
+        <button class="btn btn-primary" type="submit">Salva URL</button>
+      </div>
+    </form>
+    
+    <hr class="my-4">
     <h4 class="mb-3">Template certificato DM (DOCX o PDF)</h4>
     <p class="mb-2">Percorso corrente: <strong><?php echo htmlspecialchars($row['dm_certificate_template_docx_path'] ?? ''); ?></strong></p>
     <?php if (!empty($row['dm_certificate_template_docx_path'])) { ?>
