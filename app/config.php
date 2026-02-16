@@ -1,5 +1,6 @@
 <?php
 //locale
+/*
 return [
   'db' => [
     'host' => '127.0.0.1',
@@ -15,8 +16,9 @@ return [
     'upload_dir' => __DIR__ . '/../public/uploads',
   ],
 ];
+*/
 // remoto
-/*
+
 return [
   'db' => [
     'host' => '127.0.0.1',
@@ -32,4 +34,3 @@ return [
     'upload_dir' => __DIR__ . '/../public/uploads',
   ]
 ];
-*/

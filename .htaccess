@@ -7,8 +7,8 @@
     # Se siamo su localhost in una sottocartella, RewriteBase deve includerla
     # Su produzione (root) va bene /, ma in locale serve /amministratoriprof/
     # Soluzione: Lasciamo che Apache lo rilevi automaticamente o usiamo un path relativo
-    # RewriteBase /
-    RewriteBase /amministratoriprof/
+    RewriteBase /
+    # RewriteBase /amministratoriprof/
 
     # Serve existing files/directories as-is
     RewriteCond %{REQUEST_FILENAME} -f [OR]
