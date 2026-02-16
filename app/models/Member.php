@@ -2,7 +2,7 @@
 namespace App\Models;
 class Member extends Model {
   public function all($filters = []) {
-    $sql = 'SELECT id, member_number, first_name, last_name, studio_name, email, phone, mobile_phone, city, province, status, registration_date, created_at
+    $sql = 'SELECT id, member_number, first_name, last_name, studio_name, email, username, phone, mobile_phone, city, province, status, registration_date, created_at
             FROM members WHERE deleted_at IS NULL';
     $where = [];
     $params = [];

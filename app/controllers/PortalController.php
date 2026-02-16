@@ -79,11 +79,15 @@ class PortalController {
 
         // Recupera prossimi corsi disponibili (futuri e non ancora iscritto)
         $today = date('Y-m-d');
+        // Se la tabella courses non ha deleted_at, lo rimuoviamo dalla query
+        // Verifichiamo la struttura o usiamo una query sicura.
+        // Nel messaggio di errore: Unknown column 'deleted_at' in 'where clause'
+        // Quindi la tabella courses NON ha deleted_at.
+        
         $availableCourses = $pdo->query("
             SELECT * FROM courses 
             WHERE course_date >= '$today' 
             AND id NOT IN (SELECT course_id FROM course_participants WHERE member_id = $memberId)
-            AND deleted_at IS NULL
             ORDER BY course_date ASC
         ")->fetchAll();
 

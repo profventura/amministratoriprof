@@ -94,12 +94,6 @@ $config = require __DIR__ . '/../config.php';
               </a>
             </li>
             <li class="sidebar-item">
-              <a class="sidebar-link" href="<?php echo Helpers::url('/portal/dashboard'); ?>" target="_blank" aria-expanded="false">
-                <iconify-icon icon="solar:link-circle-line-duotone"></iconify-icon>
-                <span class="hide-menu">Area Soci (Anteprima)</span>
-              </a>
-            </li>
-            <li class="sidebar-item">
               <a class="sidebar-link" href="<?php echo Helpers::url('/memberships'); ?>" aria-expanded="false">
                 <iconify-icon icon="solar:diploma-verified-outline"></iconify-icon>
                 <span class="hide-menu">Iscrizioni</span>
@@ -132,6 +126,12 @@ $config = require __DIR__ . '/../config.php';
                 <li class="sidebar-item">
                   <a href="<?php echo Helpers::url('/settings'); ?>" class="sidebar-link">
                     <span class="icon-small"></span>
+                    <span class="hide-menu">Generale</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings/certificati'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
                     <span class="hide-menu">Certificati</span>
                   </a>
                 </li>
@@ -139,6 +139,12 @@ $config = require __DIR__ . '/../config.php';
                   <a href="<?php echo Helpers::url('/settings/attestati'); ?>" class="sidebar-link">
                     <span class="icon-small"></span>
                     <span class="hide-menu">Attestati</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/settings/ricevute'); ?>" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Ricevute</span>
                   </a>
                 </li>
                 <li class="sidebar-item">
@@ -151,6 +157,12 @@ $config = require __DIR__ . '/../config.php';
                   <a href="<?php echo Helpers::url('/settings/import-export'); ?>" class="sidebar-link">
                     <span class="icon-small"></span>
                     <span class="hide-menu">Import/Export</span>
+                  </a>
+                </li>
+                <li class="sidebar-item">
+                  <a href="<?php echo Helpers::url('/portal/login'); ?>" target="_blank" class="sidebar-link">
+                    <span class="icon-small"></span>
+                    <span class="hide-menu">Anteprima Area Soci</span>
                   </a>
                 </li>
               </ul>

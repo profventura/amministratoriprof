@@ -52,12 +52,17 @@
             </tr>
         </thead>
         <tbody>
-          <?php if (!empty($renewals)) { foreach ($renewals as $ren) { ?>
+          <?php 
+          $statusMap = [
+              'active' => 'Attivo', 'inactive' => 'Inattivo', 'suspended' => 'Sospeso', 'expelled' => 'Espulso', 'deceased' => 'Deceduto',
+              'regular' => 'Regolare', 'pending' => 'In attesa', 'expired' => 'Scaduto'
+          ];
+          if (!empty($renewals)) { foreach ($renewals as $ren) { ?>
           <tr>
             <td><?php echo (int)$ren['year']; ?></td>
-            <td><?php echo htmlspecialchars($ren['status']); ?></td>
-            <td><?php echo htmlspecialchars($ren['renewal_date'] ?? '-'); ?></td>
-            <td><?php echo htmlspecialchars($ren['payment_date'] ?? '-'); ?></td>
+            <td><?php echo htmlspecialchars($statusMap[$ren['status']] ?? $ren['status']); ?></td>
+            <td><?php echo !empty($ren['renewal_date']) ? date('d/m/Y', strtotime($ren['renewal_date'])) : '-'; ?></td>
+            <td><?php echo !empty($ren['payment_date']) ? date('d/m/Y', strtotime($ren['payment_date'])) : '-'; ?></td>
             <td><?php echo isset($ren['amount']) ? '€ ' . number_format($ren['amount'], 2, ',', '.') : '-'; ?></td>
           </tr>
           <?php } } else { ?>
@@ -116,15 +121,34 @@
     <h5 class="mb-3">Documenti</h5>
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Tipo</th><th>Anno</th><th>File</th><th></th></tr></thead>
+        <thead><tr><th>Tipo</th><th>Anno</th><th>File</th><th>Generato il</th><th>Azioni</th></tr></thead>
         <tbody>
-          <?php foreach ($docs as $d) { ?>
+          <?php foreach ($docs as $d) { 
+              $typeLabel = $d['type'];
+              if ($typeLabel === 'receipt') $typeLabel = 'Ricevuta';
+              elseif ($typeLabel === 'membership_certificate') $typeLabel = 'Certificato Iscrizione';
+              elseif ($typeLabel === 'course_certificate') $typeLabel = 'Attestato Corso';
+              
+              $fileExt = strtolower(pathinfo($d['file_path'], PATHINFO_EXTENSION));
+          ?>
           <tr>
-            <td><?php echo htmlspecialchars($d['type']); ?></td>
+            <td><?php echo htmlspecialchars($typeLabel); ?></td>
             <td><?php echo (int)$d['year']; ?></td>
             <td><?php echo htmlspecialchars(basename($d['file_path'])); ?></td>
+            <td><?php echo !empty($d['created_at']) ? date('d/m/Y H:i', strtotime($d['created_at'])) : '-'; ?></td>
             <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary" href="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/download'); ?>">Scarica</a>
+              <?php if ($fileExt === 'pdf') { ?>
+              <a class="btn btn-sm btn-outline-info me-1" href="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/download'); ?>" target="_blank" title="Anteprima">
+                  <i class="ti ti-eye"></i>
+              </a>
+              <?php } ?>
+              <a class="btn btn-sm btn-outline-primary me-1" href="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/download?download=1'); ?>" title="Scarica">
+                  <i class="ti ti-download"></i>
+              </a>
+              <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/delete'); ?>" class="d-inline" onsubmit="return confirm('Eliminare questo documento?');">
+                  <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina"><i class="ti ti-trash"></i></button>
+              </form>
             </td>
           </tr>
           <?php } ?>

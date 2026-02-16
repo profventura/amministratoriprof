@@ -19,13 +19,17 @@ class CertificatesController {
     $pdo = DB::conn();
     $assoc = $pdo->query('SELECT association_name, membership_certificate_template_docx_path FROM settings ORDER BY id DESC LIMIT 1')->fetch();
     $mbr = (new Member())->find($memberId);
-    $membership = (new Membership())->getOrCreate($memberId, $year);
+        $membership = (new Membership())->getOrCreate($memberId, $year);
+    
+    // Recupera la data di iscrizione (payment_date) dalla membership, se esiste
+    $paymentDate = !empty($membership['payment_date']) ? date('d/m/Y', strtotime($membership['payment_date'])) : date('d/m/Y');
+    
     $vars = [
       'association_name' => $assoc ? $assoc['association_name'] : 'Associazione AP',
       'member_name' => $mbr ? ($mbr['first_name'].' '.$mbr['last_name']) : '',
       'member_email' => $mbr ? ($mbr['email'] ?? '') : '',
       'year' => (string)$year,
-      'date' => date('Y-m-d'),
+      'date' => $paymentDate,
     ];
     $basename = 'certificate_' . preg_replace('/[^a-z0-9]+/i','_', $vars['member_name']) . '_' . date('dmYHis');
     $outputAbsBase = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 1) . '/../storage/documents/membership_certificate/'.$year.'/'.$basename);
@@ -52,6 +56,10 @@ class CertificatesController {
             $opts["{$f}_font_family"] = $s["certificate_stamp_{$f}_font_family"] ?? 'Arial';
             $opts["{$f}_bold"] = !empty($s["certificate_stamp_{$f}_bold"]);
         }
+        
+        // Assegniamo i valori espliciti per data e anno
+        $opts['date_value'] = $vars['date'];
+        $opts['year_value'] = $vars['year'];
         
         // Passiamo tutto al service
         \App\Services\PDFStampService::stampMembershipCertificate(
@@ -149,12 +157,15 @@ class CertificatesController {
         $mbr = $mbrModel->find($memberId);
         if (!$mbr) continue;
 
+        // Recupera data pagamento
+        $paymentDate = !empty($membership['payment_date']) ? date('d/m/Y', strtotime($membership['payment_date'])) : date('d/m/Y');
+
         $vars = [
             'association_name' => $assoc ? $assoc['association_name'] : 'Associazione AP',
             'member_name' => $mbr['last_name'].' '.$mbr['first_name'],
             'member_email' => $mbr['email'] ?? '',
             'year' => (string)$year,
-            'date' => date('Y-m-d'),
+            'date' => $paymentDate,
         ];
         
         $basename = 'certificate_' . preg_replace('/[^a-z0-9]+/i','_', $vars['member_name']) . '_' . date('dmYHis');
@@ -166,6 +177,11 @@ class CertificatesController {
             if ($ext === 'pdf') {
                 // PDF Stamp
                 $finalPdf = $outputAbsBase . '.pdf';
+                
+                // Assegna valori data e anno
+                $opts['date_value'] = $vars['date'];
+                $opts['year_value'] = $vars['year'];
+                
                 \App\Services\PDFStampService::stampMembershipCertificate($tplAbs, $finalPdf, $vars['member_name'], $membership['id'], $opts);
                 if (is_file($finalPdf)) { 
                     $docPathPublic = 'storage/documents/membership_certificate/'.$year.'/'.$basename.'.pdf'; 
