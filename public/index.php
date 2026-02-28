@@ -151,6 +151,7 @@ $router->post('/courses/{id}/participants/remove', [CoursesController::class,'re
 $router->post('/documents/dm-certificate/{id}/generate', [DMCertificatesController::class,'generateSingle']);
 $router->post('/documents/dm-certificate/{id}/generate-mass', [DMCertificatesController::class,'generateMass']);
 $router->post('/documents/{id}/delete', [DocumentsController::class,'delete']);
+$router->post('/documents/{id}/email', [DocumentsController::class,'sendEmail']);
 $router->get('/documents/download', [DocumentsController::class,'downloadByPath']);
 $router->get('/settings', [SettingsController::class,'index']);
 $router->get('/settings/certificati', [SettingsController::class,'certificati']);
@@ -168,6 +169,7 @@ $router->post('/settings/import', [SettingsController::class,'import']);
 $router->get('/settings/import/sample', [SettingsController::class,'downloadSampleCsv']);
 $router->get('/settings/email', [SettingsController::class,'email']);
 $router->post('/settings/email/update', [SettingsController::class,'updateEmailSettings']);
+$router->post('/settings/email/test', [SettingsController::class,'testEmail']);
 $router->post('/settings/update-public-url', [SettingsController::class,'updatePublicUrl']);
 $router->post('/settings/update-template', [SettingsController::class,'updateTemplate']);
 $router->post('/settings/test-docx', [SettingsController::class,'testDocx']);

@@ -124,4 +124,77 @@ class DocumentsController {
     Helpers::addFlash('success', 'Documento eliminato');
     Helpers::redirect($_SERVER['HTTP_REFERER']);
   }
+
+  public function sendEmail($id) {
+      Auth::require();
+      if (!\App\Core\CSRF::validate($_POST['csrf'] ?? '')) { 
+          Helpers::addFlash('danger', 'Token CSRF non valido'); 
+          Helpers::redirect($_SERVER['HTTP_REFERER']); 
+          return; 
+      }
+
+      $pdo = DB::conn();
+      $stmt = $pdo->prepare("SELECT d.*, m.first_name, m.last_name, m.email FROM documents d JOIN members m ON m.id = d.member_id WHERE d.id = ?");
+      $stmt->execute([(int)$id]);
+      $doc = $stmt->fetch();
+
+      if (!$doc) {
+          Helpers::addFlash('danger', 'Documento non trovato');
+          Helpers::redirect($_SERVER['HTTP_REFERER']);
+          return;
+      }
+
+      $memberEmail = $doc['email'];
+      if (!filter_var($memberEmail, FILTER_VALIDATE_EMAIL)) {
+          Helpers::addFlash('danger', 'Indirizzo email del socio non valido');
+          Helpers::redirect($_SERVER['HTTP_REFERER']);
+          return;
+      }
+
+      $filePath = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $doc['file_path'];
+      if (!file_exists($filePath)) {
+          Helpers::addFlash('danger', 'File fisico non trovato');
+          Helpers::redirect($_SERVER['HTTP_REFERER']);
+          return;
+      }
+
+      // Recupera impostazioni email per oggetto/corpo
+      $settings = $pdo->query("SELECT * FROM email_settings ORDER BY id DESC LIMIT 1")->fetch();
+      
+      $subject = "Nuovo Documento";
+      $body = "In allegato trovi il documento richiesto.";
+
+      // Personalizzazione base in base al tipo documento
+      if ($doc['type'] === 'course_certificate' || $doc['type'] === 'dm_certificate') {
+          $subject = $settings['email_dm_certificate_subject'] ?: 'Attestato di Partecipazione';
+          $body = $settings['email_dm_certificate_body'] ?: 'Gentile socio, in allegato trovi il tuo attestato.';
+      } elseif ($doc['type'] === 'membership_certificate') {
+          $subject = $settings['email_certificate_subject'] ?: 'Certificato di Iscrizione';
+          $body = $settings['email_certificate_body'] ?: 'Gentile socio, in allegato trovi il tuo certificato di iscrizione.';
+      }
+
+      // Sostituzione placeholder (base)
+      $memberName = $doc['first_name'] . ' ' . $doc['last_name'];
+      $body = str_replace(['{{NOME}}', '{{ANNO}}'], [$memberName, $doc['year']], $body);
+
+      // Invio
+      // Assicurati che EmailService sia incluso o autoloadato
+      // require_once __DIR__ . '/../services/EmailService.php'; // Se non c'è autoload
+      
+      $result = \App\Services\EmailService::send(
+          $memberEmail, 
+          $memberName, 
+          $subject, 
+          $body, 
+          [['path' => $filePath, 'name' => basename($filePath)]]
+      );
+
+      if ($result['success']) {
+          Helpers::addFlash('success', 'Email inviata con successo a ' . $memberEmail);
+      } else {
+          Helpers::addFlash('danger', 'Errore invio email: ' . $result['error']);
+      }
+
+      Helpers::redirect($_SERVER['HTTP_REFERER']);
+  }
 }

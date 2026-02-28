@@ -498,6 +498,8 @@ class SettingsController {
     $email_certificate_body = $_POST['email_certificate_body'] ?? '';
     $email_dm_certificate_subject = $_POST['email_dm_certificate_subject'] ?? '';
     $email_dm_certificate_body = $_POST['email_dm_certificate_body'] ?? '';
+    $email_receipt_subject = $_POST['email_receipt_subject'] ?? '';
+    $email_receipt_body = $_POST['email_receipt_body'] ?? '';
 
     $pdo = DB::conn();
     // Aggiorna l'unica riga o inserisci
@@ -509,6 +511,7 @@ class SettingsController {
             smtp_from_email=?, smtp_from_name=?, smtp_cc=?, smtp_bcc=?,
             email_certificate_subject=?, email_certificate_body=?,
             email_dm_certificate_subject=?, email_dm_certificate_body=?,
+            email_receipt_subject=?, email_receipt_body=?,
             updated_at=NOW() WHERE id=?";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
@@ -516,6 +519,7 @@ class SettingsController {
             $smtp_from_email, $smtp_from_name, $smtp_cc, $smtp_bcc,
             $email_certificate_subject, $email_certificate_body,
             $email_dm_certificate_subject, $email_dm_certificate_body,
+            $email_receipt_subject, $email_receipt_body,
             $exists
         ]);
     } else {
@@ -523,19 +527,51 @@ class SettingsController {
             smtp_host, smtp_port, smtp_secure, username, password, 
             smtp_from_email, smtp_from_name, smtp_cc, smtp_bcc,
             email_certificate_subject, email_certificate_body,
-            email_dm_certificate_subject, email_dm_certificate_body
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+            email_dm_certificate_subject, email_dm_certificate_body,
+            email_receipt_subject, email_receipt_body
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([
             $smtp_host, $smtp_port, $smtp_secure, $username, $password,
             $smtp_from_email, $smtp_from_name, $smtp_cc, $smtp_bcc,
             $email_certificate_subject, $email_certificate_body,
-            $email_dm_certificate_subject, $email_dm_certificate_body
+            $email_dm_certificate_subject, $email_dm_certificate_body,
+            $email_receipt_subject, $email_receipt_body
         ]);
     }
     
     Helpers::addFlash('success', 'Impostazioni Email aggiornate');
     Helpers::redirect('/settings/email');
+  }
+
+  public function testEmail() {
+      Auth::require();
+      if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
+      
+      $to = $_POST['test_email'] ?? '';
+      if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+          Helpers::addFlash('danger', 'Indirizzo email non valido');
+          Helpers::redirect('/settings/email');
+          return;
+      }
+      
+      // Usa EmailService che legge dal DB. 
+      // Richiediamo che l'utente salvi prima, per semplicità e coerenza.
+      
+      $res = \App\Services\EmailService::send(
+          $to, 
+          'Test User', 
+          'Test Configurazione Email - Gestionale', 
+          'Se leggi questa email, la configurazione SMTP è corretta.'
+      );
+      
+      if ($res['success']) {
+          Helpers::addFlash('success', 'Email di test inviata con successo a ' . $to);
+      } else {
+          Helpers::addFlash('danger', 'Errore invio: ' . $res['error']);
+      }
+      
+      Helpers::redirect('/settings/email');
   }
 
   public function updateAttestatiTemplate() {

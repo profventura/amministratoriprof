@@ -71,10 +71,29 @@ class CoursesController {
   public function addParticipant($id) {
     Auth::require();
     if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
-    $memberId = (int)($_POST['member_id'] ?? 0);
-    if ($memberId <= 0) { Helpers::addFlash('danger','Seleziona un socio'); Helpers::redirect('/courses/'.$id); return; }
-    (new CourseParticipant())->add((int)$id, $memberId);
-    Helpers::addFlash('success','Partecipante aggiunto');
+    
+    // Supporto per aggiunta singola o massiva
+    if (isset($_POST['member_ids']) && is_array($_POST['member_ids'])) {
+        // Massiva
+        $count = 0;
+        foreach ($_POST['member_ids'] as $mid) {
+            $mid = (int)$mid;
+            if ($mid > 0) {
+                (new CourseParticipant())->add((int)$id, $mid);
+                $count++;
+            }
+        }
+        if ($count > 0) Helpers::addFlash('success', "$count partecipanti aggiunti");
+        else Helpers::addFlash('warning', "Nessun partecipante selezionato");
+        
+    } else {
+        // Singola (legacy)
+        $memberId = (int)($_POST['member_id'] ?? 0);
+        if ($memberId <= 0) { Helpers::addFlash('danger','Seleziona un socio'); Helpers::redirect('/courses/'.$id); return; }
+        (new CourseParticipant())->add((int)$id, $memberId);
+        Helpers::addFlash('success','Partecipante aggiunto');
+    }
+    
     Helpers::redirect('/courses/'.$id);
   }
   public function removeParticipant($id) {
