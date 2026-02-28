@@ -13,10 +13,11 @@ if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\SMTP;
 
 class EmailService {
 
-    public static function send($to, $name, $subject, $body, $attachments = []) {
+    public static function send($to, $name, $subject, $body, $attachments = [], $returnDebug = false) {
         $pdo = DB::conn();
         $settings = $pdo->query("SELECT * FROM email_settings ORDER BY id DESC LIMIT 1")->fetch();
 
@@ -25,9 +26,16 @@ class EmailService {
         }
 
         $mail = new PHPMailer(true);
+        $debugLog = '';
 
         try {
             // Server settings
+            $mail->SMTPDebug = 2; // SMTP::DEBUG_SERVER non sempre è caricato se SMTP non è use'd correttamente, 2 è safe
+            $mail->Debugoutput = function($str, $level) use (&$debugLog) {
+                $debugLog .= date('Y-m-d H:i:s') . " [DEBUG] $str\n";
+                // error_log("SMTP DEBUG: $str"); // Disabilito error_log se catturo
+            };
+
             $mail->isSMTP();
             $mail->Host       = $settings['smtp_host'];
             $mail->SMTPAuth   = true;
@@ -78,9 +86,10 @@ class EmailService {
             $mail->AltBody = strip_tags($body);
 
             $mail->send();
-            return ['success' => true];
+            return ['success' => true, 'debug' => $returnDebug ? $debugLog : null];
         } catch (Exception $e) {
-            return ['success' => false, 'error' => "Errore invio email: {$mail->ErrorInfo}"];
+            error_log("MAILER ERROR: " . $mail->ErrorInfo); // Log errore finale
+            return ['success' => false, 'error' => "Errore invio email: {$mail->ErrorInfo}", 'debug' => $returnDebug ? $debugLog : null];
         }
     }
 }

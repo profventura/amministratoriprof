@@ -1,12 +1,22 @@
 # File nella root
-/.htaccess
+.htaccess
+.DS_Store
 
-# Cartelle nella root
+# File di configurazione
+app/config.php
+
+# Cartelle ignorate
 /docs/
-<<<<<<< HEAD
-=======
 /database/
->>>>>>> e5ca002da2271abb7fc92d15db0ed315589528a0
+/vendor/
+/node_modules/
+/storage/documents/
+/storage/uploads/
+/app/templates/documents/receipt_template.pdf
+/app/templates/documents/membership_certificate_template.docx
+/app/templates/documents/membership_certificate_template.pdf
+/app/templates/certificato_iscrizione.pdf
+/app/templates/attestato.pdf
 
-# File dentro app
-/app/config.php
+# Log
+*.log

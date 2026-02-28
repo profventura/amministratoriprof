@@ -558,17 +558,31 @@ class SettingsController {
       // Usa EmailService che legge dal DB. 
       // Richiediamo che l'utente salvi prima, per semplicità e coerenza.
       
+      // Passiamo true come ultimo parametro per ottenere il debug log
       $res = \App\Services\EmailService::send(
           $to, 
           'Test User', 
           'Test Configurazione Email - Gestionale', 
-          'Se leggi questa email, la configurazione SMTP è corretta.'
+          'Se leggi questa email, la configurazione SMTP è corretta.',
+          [],
+          true
       );
       
       if ($res['success']) {
-          Helpers::addFlash('success', 'Email di test inviata con successo a ' . $to);
+          $msg = 'Email di test inviata con successo a ' . htmlspecialchars($to);
+          if (!empty($res['debug'])) {
+             // Salviamo il debug in sessione per mostrarlo nel modal
+             $_SESSION['last_email_debug'] = $res['debug'];
+             $msg .= ' <br><a href="#" data-bs-toggle="modal" data-bs-target="#debugModal">Vedi Log SMTP</a>';
+          }
+          Helpers::addFlash('success', $msg);
       } else {
-          Helpers::addFlash('danger', 'Errore invio: ' . $res['error']);
+          $msg = 'Errore invio: ' . htmlspecialchars($res['error']);
+          if (!empty($res['debug'])) {
+             $_SESSION['last_email_debug'] = $res['debug'];
+             $msg .= ' <br><a href="#" data-bs-toggle="modal" data-bs-target="#debugModal">Vedi Log SMTP</a>';
+          }
+          Helpers::addFlash('danger', $msg);
       }
       
       Helpers::redirect('/settings/email');
