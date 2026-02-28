@@ -2,6 +2,15 @@
 namespace App\Services;
 
 use App\Core\DB;
+
+// Se non usiamo l'autoloader di composer, includiamo manualmente i file
+if (!class_exists('PHPMailer\PHPMailer\PHPMailer')) {
+    $vendorDir = dirname(__DIR__, 2) . '/vendor/phpmailer/phpmailer/src/';
+    if (file_exists($vendorDir . 'Exception.php')) require_once $vendorDir . 'Exception.php';
+    if (file_exists($vendorDir . 'PHPMailer.php')) require_once $vendorDir . 'PHPMailer.php';
+    if (file_exists($vendorDir . 'SMTP.php')) require_once $vendorDir . 'SMTP.php';
+}
+
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -24,7 +33,15 @@ class EmailService {
             $mail->SMTPAuth   = true;
             $mail->Username   = $settings['username'];
             $mail->Password   = $settings['password'];
-            $mail->SMTPSecure = $settings['smtp_secure']; // 'tls' or 'ssl'
+            
+            // Fix per Aruba: spesso richiede 'ssl' su porta 465 o 'tls' su 587
+            // Se smtp_secure è vuoto ma porta è 465, forza ssl.
+            $secure = $settings['smtp_secure'];
+            if (empty($secure)) {
+                if ($settings['smtp_port'] == 465) $secure = PHPMailer::ENCRYPTION_SMTPS;
+                elseif ($settings['smtp_port'] == 587) $secure = PHPMailer::ENCRYPTION_STARTTLS;
+            }
+            $mail->SMTPSecure = $secure; 
             $mail->Port       = (int)$settings['smtp_port'];
             
             // Mittente
@@ -57,7 +74,7 @@ class EmailService {
             // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
-            $mail->Body    = $body;
+            $mail->Body    = nl2br($body); // Converte newlines in <br>
             $mail->AltBody = strip_tags($body);
 
             $mail->send();
