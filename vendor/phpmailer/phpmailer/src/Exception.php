@@ -1,18 +1,20 @@
 <?php
+
 /**
  * PHPMailer Exception class.
+ * PHP Version 5.5.
  *
- * @package PHPMailer
- * @subpackage PHPMailer
- * @author Marcus Bointon (Synchro/coolbru) <phpmailer@synchromedia.co.uk>
- * @author Jim Jagielski (jimjag) <jimjag@gmail.com>
- * @author Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
- * @author Brent R. Matzelle (original founder)
+ * @see       https://github.com/PHPMailer/PHPMailer/ The PHPMailer GitHub project
+ *
+ * @author    Marcus Bointon (Synchro/coolbru) <phpmailer@synchromedia.co.uk>
+ * @author    Jim Jagielski (jimjag) <jimjag@gmail.com>
+ * @author    Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
+ * @author    Brent R. Matzelle (original founder)
  * @copyright 2012 - 2020 Marcus Bointon
  * @copyright 2010 - 2012 Jim Jagielski
  * @copyright 2004 - 2009 Andy Prevost
- * @license http://www.gnu.org/copyleft/lesser.html GNU Lesser General Public License
- * @note This program is distributed in the hope that it will be useful - WITHOUT
+ * @license   https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html GNU Lesser General Public License
+ * @note      This program is distributed in the hope that it will be useful - WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
  * FITNESS FOR A PARTICULAR PURPOSE.
  */
@@ -22,12 +24,7 @@ namespace PHPMailer\PHPMailer;
 /**
  * PHPMailer exception handler.
  *
- * @package PHPMailer
- * @subpackage PHPMailer
- * @author Marcus Bointon (Synchro/coolbru) <phpmailer@synchromedia.co.uk>
- * @author Jim Jagielski (jimjag) <jimjag@gmail.com>
- * @author Andy Prevost (codeworxtech) <codeworxtech@users.sourceforge.net>
- * @author Brent R. Matzelle (original founder)
+ * @author Marcus Bointon <phpmailer@synchromedia.co.uk>
  */
 class Exception extends \Exception
 {
@@ -38,8 +35,6 @@ class Exception extends \Exception
      */
     public function errorMessage()
     {
-        $errorMsg = '<strong>' . htmlspecialchars($this->getMessage()) . "</strong><br />\n";
-
-        return $errorMsg;
+        return '<strong>' . htmlspecialchars($this->getMessage(), ENT_COMPAT | ENT_HTML401) . "</strong><br />\n";
     }
 }
