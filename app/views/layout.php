@@ -333,10 +333,16 @@ $config = require __DIR__ . '/../config.php';
   <script>
     (function () {
       var u = '<?php echo Helpers::url('public/libs/iconify/solar.json'); ?>';
-      fetch(u, { credentials: 'omit' }).then(function (r) { return r.json(); }).then(function (col) {
-        var api = window.Iconify || window.IconifyIcon;
-        if (api && api.addCollection) { api.addCollection(col); }
-      });
+      fetch(u, { credentials: 'omit' })
+        .then(function (r) { 
+            if (!r.ok) throw new Error('Network response was not ok');
+            return r.json(); 
+        })
+        .then(function (col) {
+            var api = window.Iconify || window.IconifyIcon;
+            if (api && api.addCollection) { api.addCollection(col); }
+        })
+        .catch(function(e) { console.warn('Iconify solar.json load failed:', e); });
     })();
   </script>
   <script src="<?php echo Helpers::url('public/js/highlights/highlight.min.js'); ?>"></script>

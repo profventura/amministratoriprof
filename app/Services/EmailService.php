@@ -55,6 +55,14 @@ class EmailService {
             // Mittente
             $fromEmail = $settings['smtp_from_email'] ?: $settings['username'];
             $fromName = $settings['smtp_from_name'] ?: 'Amministratore';
+            
+            // Fix per Aruba: Il mittente DEVE essere uguale all'utente autenticato
+            // Se l'utente ha impostato un'email mittente diversa, Aruba potrebbe bloccare l'invio.
+            // Aggiungiamo un warning nel log di debug se differiscono.
+            if ($fromEmail !== $settings['username'] && strpos($settings['smtp_host'], 'aruba') !== false) {
+                 $debugLog .= date('Y-m-d H:i:s') . " [WARNING] Sender address '$fromEmail' differs from SMTP username '{$settings['username']}'. Aruba might block this.\n";
+            }
+            
             $mail->setFrom($fromEmail, $fromName);
 
             // Destinatario
