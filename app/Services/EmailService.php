@@ -30,12 +30,8 @@ class EmailService {
 
         try {
             // Server settings
-            $mail->SMTPDebug = 2; // SMTP::DEBUG_SERVER non sempre è caricato se SMTP non è use'd correttamente, 2 è safe
-            $mail->Debugoutput = function($str, $level) use (&$debugLog) {
-                $debugLog .= date('Y-m-d H:i:s') . " [DEBUG] $str\n";
-                // error_log("SMTP DEBUG: $str"); // Disabilito error_log se catturo
-            };
-
+            $mail->SMTPDebug = 0; // 0 = off (for production)
+            
             $mail->isSMTP();
             $mail->Host       = $settings['smtp_host'];
             $mail->SMTPAuth   = true;

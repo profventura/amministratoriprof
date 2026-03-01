@@ -28,8 +28,8 @@
         <p><strong>Cellulare:</strong> <?php echo htmlspecialchars($row['mobile_phone'] ?? '-'); ?></p>
         <p><strong>Telefono Fisso:</strong> <?php echo htmlspecialchars($row['phone'] ?? '-'); ?></p>
         <p><strong>Indirizzo:</strong> <?php echo htmlspecialchars($row['address'] ?? '-'); ?> - <?php echo htmlspecialchars($row['zip_code'] ?? ''); ?> <?php echo htmlspecialchars($row['city'] ?? '-'); ?> (<?php echo htmlspecialchars($row['province'] ?? ''); ?>)</p>
-        <p><strong>Data di nascita:</strong> <?php echo htmlspecialchars($row['birth_date'] ?? '-'); ?></p>
-        <p><strong>Data Iscrizione:</strong> <?php echo htmlspecialchars($row['registration_date'] ?? '-'); ?></p>
+        <p><strong>Data di nascita:</strong> <?php echo !empty($row['birth_date']) ? date('d/m/Y', strtotime($row['birth_date'])) : '-'; ?></p>
+        <p><strong>Data Iscrizione:</strong> <?php echo !empty($row['registration_date']) ? date('d/m/Y', strtotime($row['registration_date'])) : '-'; ?></p>
         <p><strong>Stato:</strong> <?php echo htmlspecialchars($row['status']); ?></p>
       </div>
     </div>
@@ -59,7 +59,7 @@
           ];
           if (!empty($renewals)) { foreach ($renewals as $ren) { ?>
           <tr>
-            <td><?php echo (int)$ren['year']; ?></td>
+            <td><a href="<?php echo \App\Core\Helpers::url('/renewals/'.$ren['id'].'/edit'); ?>"><?php echo (int)$ren['year']; ?></a></td>
             <td><?php echo htmlspecialchars($statusMap[$ren['status']] ?? $ren['status']); ?></td>
             <td><?php echo !empty($ren['renewal_date']) ? date('d/m/Y', strtotime($ren['renewal_date'])) : '-'; ?></td>
             <td><?php echo !empty($ren['payment_date']) ? date('d/m/Y', strtotime($ren['payment_date'])) : '-'; ?></td>
@@ -135,7 +135,7 @@
             <td><?php echo htmlspecialchars($typeLabel); ?></td>
             <td><?php echo (int)$d['year']; ?></td>
             <td><?php echo htmlspecialchars(basename($d['file_path'])); ?></td>
-            <td><?php echo !empty($d['created_at']) ? date('d/m/Y H:i', strtotime($d['created_at'])) : '-'; ?></td>
+            <td><?php echo !empty($d['created_at']) ? date('d/m/Y', strtotime($d['created_at'])) : '-'; ?></td>
             <td class="text-end">
               <?php if ($fileExt === 'pdf') { ?>
               <a class="btn btn-sm btn-outline-info me-1" href="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/download'); ?>" target="_blank" title="Anteprima">

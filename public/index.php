@@ -132,6 +132,7 @@ $router->post('/memberships/{id}/delete', [MembershipsController::class,'delete'
 $router->get('/ap/payments/create', [APPaymentsController::class,'createForm']);
 $router->post('/ap/payments', [APPaymentsController::class,'store']);
 $router->get('/documents/{id}/download', [DocumentsController::class,'download']);
+$router->get('/documents/{id}/view', [DocumentsController::class,'view']);
 $router->post('/documents/membership-certificate/generate', [CertificatesController::class,'generateMember']);
 $router->post('/documents/membership-certificate/generate-mass', [CertificatesController::class,'generateMass']);
 // Ricevute
@@ -161,6 +162,7 @@ $router->post('/settings/attestati/update-template', [SettingsController::class,
 $router->post('/settings/attestati/update-stamp', [SettingsController::class,'updateAttestatiStamp']);
 $router->post('/settings/attestati/preview-stamp', [SettingsController::class,'previewAttestatiStamp']);
 $router->post('/settings/ricevute/update-template', [SettingsController::class,'updateRicevuteTemplate']);
+$router->post('/settings/ricevute/preview-html', [SettingsController::class,'previewRicevuteHtml']);
 $router->post('/settings/ricevute/update-stamp', [SettingsController::class,'updateRicevuteStamp']);
 $router->post('/settings/ricevute/preview-stamp', [SettingsController::class,'previewRicevuteStamp']);
 $router->get('/settings/import-export', [SettingsController::class,'importExport']);
@@ -175,5 +177,7 @@ $router->post('/settings/update-template', [SettingsController::class,'updateTem
 $router->post('/settings/test-docx', [SettingsController::class,'testDocx']);
 $router->post('/settings/update-stamp', [SettingsController::class,'updateStamp']);
 $router->post('/settings/preview-stamp', [SettingsController::class,'previewStamp']);
+$router->post('/settings/manual-certificate', [SettingsController::class, 'generateManualCertificate']);
+$router->post('/settings/manual-attestato', [SettingsController::class, 'generateManualAttestato']);
 $router->get('/settings/pdf-geometry', [SettingsController::class,'getPdfGeometry']);
 $router->dispatch();

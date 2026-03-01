@@ -61,6 +61,10 @@ class CertificatesController {
         $opts['date_value'] = $vars['date'];
         $opts['year_value'] = $vars['year'];
         
+        // Allineamento richiesto: Data e Numero a Sinistra
+        $opts['date_align'] = 'L';
+        $opts['number_align'] = 'L';
+        
         // Passiamo tutto al service
         \App\Services\PDFStampService::stampMembershipCertificate(
             $tplAbs, 
@@ -182,6 +186,10 @@ class CertificatesController {
                 $opts['date_value'] = $vars['date'];
                 $opts['year_value'] = $vars['year'];
                 
+                // Allineamento richiesto
+                $opts['date_align'] = 'L';
+                $opts['number_align'] = 'L';
+                
                 \App\Services\PDFStampService::stampMembershipCertificate($tplAbs, $finalPdf, $vars['member_name'], $membership['id'], $opts);
                 if (is_file($finalPdf)) { 
                     $docPathPublic = 'storage/documents/membership_certificate/'.$year.'/'.$basename.'.pdf'; 
@@ -286,6 +294,11 @@ class CertificatesController {
             if ($ext === 'pdf') {
                 // PDF Stamp
                 $finalPdf = $outputAbsBase . '.pdf';
+                
+                // Allineamento richiesto
+                $opts['date_align'] = 'L';
+                $opts['number_align'] = 'L';
+                
                 \App\Services\PDFStampService::stampMembershipCertificate($tplAbs, $finalPdf, $vars['member_name'], $membership['id'], $opts);
                 if (is_file($finalPdf)) { 
                     $docPathPublic = 'storage/documents/membership_certificate/'.$year.'/'.$basename.'.pdf'; 

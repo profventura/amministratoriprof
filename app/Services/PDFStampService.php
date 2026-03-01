@@ -46,27 +46,32 @@ class PDFStampService {
             $pdf->Text(2, 8, "ORIGIN (0,0)");
         }
 
-        // Registra font
-        $pdf->AddFont('gillsansmt', '', 'gillsansmt.php');
-        $pdf->AddFont('gillsansmt', 'B', 'gillsansmtb.php');
-        $pdf->AddFont('gillsansmt', 'I', 'gillsansmt.php');
+        // Registra font - Gillsans rimosso per mancanza file
+        // $pdf->AddFont('gillsansmt', '', 'gillsansmt.php');
+        // $pdf->AddFont('gillsansmt', 'B', 'gillsansmtb.php');
+        // $pdf->AddFont('gillsansmt', 'I', 'gillsansmt.php');
 
         $mapFont = function($f) {
             $f = strtolower($f ?? '');
             if (strpos($f, 'times') !== false) return 'Times';
             if (strpos($f, 'courier') !== false) return 'Courier';
             if (strpos($f, 'helvetica') !== false) return 'Helvetica';
-            if (strpos($f, 'gill') !== false) return 'gillsansmt'; 
+            // if (strpos($f, 'gill') !== false) return 'gillsansmt'; 
             return 'Arial';
         };
 
-        // Helper stampa centrata
-        $printCentered = function($text, $x, $y, $font, $style, $size, $color) use ($pdf, $mapFont) {
+        // Helper stampa testo con allineamento
+        $printText = function($text, $x, $y, $font, $style, $size, $color, $align = 'C') use ($pdf, $mapFont) {
+            // Conversione UTF-8 a ISO-8859-1 (o Windows-1252) per FPDF che non supporta nativamente UTF-8 completo
+            // Prova a rilevare e convertire
+            if (mb_detect_encoding($text, 'UTF-8', true)) {
+                $text = iconv('UTF-8', 'windows-1252//TRANSLIT', $text);
+            }
+            
             $font = $mapFont($font);
             if ($x > 0 && $y > 0) {
                 $pdf->SetFont($font, $style, $size);
                 $pdf->SetTextColor($color[0], $color[1], $color[2]);
-                $w = $pdf->GetStringWidth($text);
                 
                 if (strpos($text, "\n") !== false) {
                     $lines = explode("\n", $text);
@@ -76,11 +81,30 @@ class PDFStampService {
                     
                     foreach ($lines as $i => $line) {
                         $wLine = $pdf->GetStringWidth($line);
-                        $pdf->SetXY($x - ($wLine / 2), $startY + ($i * $lineHeight));
+                        
+                        if ($align === 'L') {
+                            $lineX = $x;
+                        } elseif ($align === 'R') {
+                            $lineX = $x - $wLine;
+                        } else {
+                            $lineX = $x - ($wLine / 2);
+                        }
+                        
+                        $pdf->SetXY($lineX, $startY + ($i * $lineHeight));
                         $pdf->Write(0, $line);
                     }
                 } else {
-                    $pdf->SetXY($x - ($w / 2), $y);
+                    $w = $pdf->GetStringWidth($text);
+                    
+                    if ($align === 'L') {
+                        $startX = $x;
+                    } elseif ($align === 'R') {
+                        $startX = $x - $w;
+                    } else {
+                        $startX = $x - ($w / 2);
+                    }
+                    
+                    $pdf->SetXY($startX, $y);
                     $pdf->Write(0, $text);
                 }
             }
@@ -101,6 +125,7 @@ class PDFStampService {
                 $c = self::hex2rgb($opts["{$field}_color"] ?? '#000000');
                 $f = $opts["{$field}_font_family"] ?? 'Arial';
                 $b = !empty($opts["{$field}_bold"]) ? 'B' : '';
+                $align = $opts["{$field}_align"] ?? 'C'; // Default Center
                 
                 // Valore: cerca field_value, poi field (se passato direttamente)
                 $text = '';
@@ -108,7 +133,7 @@ class PDFStampService {
                 elseif (isset($opts[$field]) && !is_array($opts[$field])) $text = $opts[$field];
                 
                 if ($text !== '') {
-                    $printCentered($text, $x, $y, $f, $b, $fs, $c);
+                    $printText($text, $x, $y, $f, $b, $fs, $c, $align);
                 }
             }
         }

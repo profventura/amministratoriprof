@@ -48,7 +48,7 @@
       <?php foreach ($rows as $r) { ?>
       <tr>
         <td><?php echo htmlspecialchars($r['receipt_number']); ?></td>
-        <td><?php echo htmlspecialchars($r['payment_date']); ?></td>
+        <td><?php echo date('d/m/Y', strtotime($r['payment_date'])); ?></td>
         <td><?php echo htmlspecialchars($r['last_name'].' '.$r['first_name']); ?></td>
         <td>€ <?php echo number_format((float)$r['amount'], 2, ',', '.'); ?></td>
         <td><?php echo htmlspecialchars($r['method']); ?></td>

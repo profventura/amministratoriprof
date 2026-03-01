@@ -15,6 +15,11 @@ class CourseParticipant extends Model {
     $st = $this->pdo->prepare('DELETE FROM course_participants WHERE course_id=? AND member_id=?');
     $st->execute([(int)$courseId, (int)$memberId]);
   }
+  public function getCertificateId($courseId, $memberId) {
+    $st = $this->pdo->prepare('SELECT certificate_document_id FROM course_participants WHERE course_id=? AND member_id=?');
+    $st->execute([(int)$courseId, (int)$memberId]);
+    return $st->fetchColumn();
+  }
   public function setCertificate($courseId, $memberId, $documentId) {
     $st = $this->pdo->prepare('UPDATE course_participants SET certificate_document_id=? WHERE course_id=? AND member_id=?');
     $st->execute([(int)$documentId, (int)$courseId, (int)$memberId]);

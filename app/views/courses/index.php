@@ -37,6 +37,8 @@
         <th>Data</th>
         <th>Orario</th>
         <th>Anno</th>
+        <th>Luogo</th>
+        <th>Ore</th>
         <th>Azioni</th>
       </tr>
     </thead>
@@ -44,17 +46,17 @@
       <?php foreach ($rows as $r) { ?>
       <tr>
         <td><?php echo htmlspecialchars($r['title']); ?></td>
-        <td><?php echo htmlspecialchars($r['course_date']); ?></td>
+        <td><?php echo date('d/m/Y', strtotime($r['course_date'])); ?></td>
         <td><?php echo htmlspecialchars(($r['start_time'] ?? '').' - '.($r['end_time'] ?? '')); ?></td>
         <td><?php echo (int)$r['year']; ?></td>
-        <td>
-          <a class="btn btn-sm btn-outline-primary" href="<?php echo \App\Core\Helpers::url('/courses/'.$r['id']); ?>">Apri</a>
-          <a class="btn btn-sm btn-outline-warning ms-1" href="<?php echo \App\Core\Helpers::url('/courses/'.$r['id'].'/edit'); ?>">Modifica</a>
-          
-          <!-- Pulsante Elimina con modale di conferma o form hidden (usiamo form hidden per coerenza con controller) -->
-          <form action="<?php echo \App\Core\Helpers::url('/courses/'.$r['id'].'/delete'); ?>" method="post" class="d-inline" onsubmit="return confirm('Sei sicuro di voler eliminare questo corso?');">
+        <td><?php echo htmlspecialchars($r['location'] ?? ''); ?></td>
+        <td><?php echo htmlspecialchars($r['hours'] ?? ''); ?></td>
+        <td class="text-end">
+          <a href="<?php echo \App\Core\Helpers::url('/courses/'.$r['id']); ?>" class="btn btn-sm btn-outline-primary">Apri</a>
+          <a href="<?php echo \App\Core\Helpers::url('/courses/'.$r['id'].'/edit'); ?>" class="btn btn-sm btn-outline-warning">Modifica</a>
+          <form action="<?php echo \App\Core\Helpers::url('/courses/' . $r['id'] . '/delete'); ?>" method="post" class="d-inline delete-form">
             <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-            <button type="submit" class="btn btn-sm btn-outline-danger ms-1">Elimina</button>
+            <button type="submit" class="btn btn-sm btn-outline-danger">Elimina</button>
           </form>
         </td>
       </tr>
@@ -63,10 +65,47 @@
   </table>
 </div>
 
+<!-- Modale di Conferma Eliminazione -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma Eliminazione</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Sei sicuro di voler eliminare questo corso?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Elimina</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function(){
     if (!window.jQuery) return;
     var $ = window.jQuery;
+    
+    // Gestione eliminazione con modale
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    var formToSubmit = null;
+
+    $(document).on('submit', 'form.delete-form', function(e){
+        e.preventDefault();
+        formToSubmit = this;
+        deleteModal.show();
+    });
+
+    $('#confirmDeleteBtn').on('click', function(){
+        if (formToSubmit) {
+            formToSubmit.submit();
+        }
+        deleteModal.hide();
+    });
+
     $('#datatable').DataTable({
         responsive: true,
         deferRender: true,

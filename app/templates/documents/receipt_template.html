@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ricevuta N° {{receipt_number}} / {{year}} - Amministratori Professionisti</title>
+    <style>
+        :root { 
+             --primary-color: #2c3e50; 
+             --secondary-color: #34495e; 
+             --border-color: #e0e0e0; 
+             --bg-color: #f9f9f9; 
+             --text-color: #333; 
+             --accent-color: #2e86de; 
+         } 
+         body { 
+             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+             background-color: var(--bg-color); 
+             color: var(--text-color); 
+             margin: 0; 
+             padding: 20px; 
+             display: flex; 
+             justify-content: center; 
+         } 
+         .receipt-container { 
+             background-color: white; 
+             width: 100%; 
+             max-width: 800px; 
+             padding: 40px; 
+             box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+             border-radius: 8px; 
+             position: relative; 
+             overflow: hidden; 
+         } 
+         .header { 
+             display: flex; 
+             justify-content: space-between; 
+             align-items: flex-start; 
+             border-bottom: 2px solid var(--primary-color); 
+             padding-bottom: 20px; 
+             margin-bottom: 30px; 
+         } 
+         .brand-container { 
+             display: flex; 
+             align-items: center; 
+             gap: 20px; 
+         } 
+         .logo-svg { 
+             width: 80px; 
+             height: 80px; 
+         } 
+         .issuer-info h1 { 
+             margin: 0; 
+             font-size: 22px; 
+             color: var(--primary-color); 
+             letter-spacing: 0.5px; 
+             text-transform: uppercase; 
+         } 
+         .issuer-details { 
+             font-size: 13px; 
+             line-height: 1.5; 
+             margin-top: 5px; 
+             color: #555; 
+         } 
+         .receipt-meta { 
+             text-align: right; 
+         } 
+         .receipt-number { 
+             font-size: 18px; 
+             font-weight: bold; 
+             color: var(--secondary-color); 
+         } 
+         .client-section { 
+             margin-bottom: 40px; 
+         } 
+         .client-box { 
+             padding: 20px; 
+             border: 1px solid var(--border-color); 
+             border-radius: 6px; 
+             background-color: #fcfcfc; 
+             line-height: 1.6; 
+         } 
+         .label { 
+             font-size: 10px; 
+             text-transform: uppercase; 
+             color: #95a5a6; 
+             margin-bottom: 8px; 
+             display: block; 
+             font-weight: bold; 
+         } 
+         .value { 
+             font-size: 14px; 
+             font-weight: 500; 
+         } 
+         table { 
+             width: 100%; 
+             border-collapse: collapse; 
+             margin-bottom: 30px; 
+             position: relative; 
+             z-index: 1; 
+         } 
+         th { 
+             background-color: var(--primary-color); 
+             color: white; 
+             text-align: left; 
+             padding: 12px; 
+             font-size: 12px; 
+             text-transform: uppercase; 
+         } 
+         td { 
+             padding: 15px 12px; 
+             border-bottom: 1px solid var(--border-color); 
+             font-size: 14px; 
+         } 
+         .total-section { 
+             display: flex; 
+             justify-content: flex-end; 
+         } 
+         .total-table { 
+             width: 320px; 
+         } 
+         .total-row { 
+             display: flex; 
+             justify-content: space-between; 
+             padding: 8px 0; 
+             font-size: 14px; 
+         } 
+         .total-row.grand-total { 
+             border-top: 2px solid var(--primary-color); 
+             margin-top: 10px; 
+             padding-top: 15px; 
+             font-size: 18px; 
+             font-weight: bold; 
+         } 
+         .footer { 
+             margin-top: 50px; 
+             font-size: 12px; 
+             color: #7f8c8d; 
+             border-top: 1px solid var(--border-color); 
+             padding-top: 20px; 
+         } 
+         .payment-status { 
+             display: inline-block; 
+             background-color: #27ae60; 
+             color: white; 
+             padding: 6px 16px; 
+             border-radius: 4px; 
+             font-weight: bold; 
+             margin-top: 10px; 
+             font-size: 13px; 
+         } 
+         @media print { 
+             body { background-color: white; padding: 0; } 
+             .receipt-container { box-shadow: none; border: none; padding: 20px; } 
+         } 
+    </style>
+</head>
+<body>
+<div class="receipt-container">
+<div class="header">
+<div class="brand-container">AP
+<div class="issuer-info">
+<h1>AMMINISTRATORI PROFESSIONISTI</h1>
+<div class="issuer-details">Via del Giordano, 33 - 00144 Roma<br />P.IVA 14504581001 | C.F. 97950820585<br /><strong>IBAN:</strong> IT78Z0344103212CC0520002268</div>
+</div>
+</div>
+<div class="receipt-meta">
+<div class="receipt-number">RICEVUTA N&deg; {{receipt_number}} / {{year}}</div>
+<div style="margin-top: 5px; font-weight: 500;">Data: {{receipt_date}}</div>
+</div>
+</div>
+<div class="client-section">
+<div class="client-box"><span class="label">Spettabile / Intestatario Fatturazione</span>
+<div class="value">{{billing_details}}</div>
+</div>
+</div>
+<div style="margin-bottom: 25px;"><span class="label">Oggetto della prestazione</span>
+<div class="value" style="font-size: 16px; color: var(--primary-color); border-left: 3px solid var(--accent-color); padding-left: 10px;">{{description}}</div>
+</div>
+<table>
+<thead>
+<tr>
+<th>Descrizione del Servizio</th>
+<th style="text-align: right; width: 150px;">Importo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>{{item_description}}</td>
+<td style="text-align: right; font-weight: 500;">&euro; {{amount}}</td>
+</tr>
+</tbody>
+</table>
+<div class="total-section">
+<div class="total-table">
+<div class="total-row">Imponibile Prestazione&euro; {{amount}}</div>
+<div class="total-row">IVA (Esente ex artt. 1-4 DPR 633/72)&euro; 0,00</div>
+<div class="total-row grand-total">TOTALE RICEVUTA&euro; {{amount}}</div>
+<div class="total-row" style="color: #27ae60; font-weight: bold; background-color: #f0fff4; padding: 10px; border-radius: 4px; margin-top: 5px;">NETTO DA VERSARE&euro; {{amount}}</div>
+</div>
+</div>
+<div class="footer">
+<p><em>Nota: Operazione fuori campo IVA ai sensi degli artt. 1 e 4 del DPR 633/72.</em></p>
+<div class="payment-status">PAGATO IL {{payment_date}}</div>
+</div>
+</div>
+</body>
+</html>

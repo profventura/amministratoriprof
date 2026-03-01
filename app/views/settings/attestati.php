@@ -230,6 +230,43 @@ $row = $data['row'] ?? [];
       </div>
     </form>
     
+    <hr class="my-4">
+    
+    <h5 class="mb-3">Generazione Manuale Attestato</h5>
+    <div class="card bg-light border-0">
+        <div class="card-body">
+            <form method="post" action="<?php echo Helpers::url('/settings/manual-attestato'); ?>" target="_blank">
+                <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Nome Socio</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Es. Mario Rossi">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Argomento</label>
+                        <textarea name="course_title" class="form-control" required placeholder="Es. Corso Excel" rows="1" style="resize:vertical;"></textarea>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Anno</label>
+                        <input type="number" name="year" class="form-control" value="<?php echo date('Y'); ?>" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Emissione</label>
+                        <input type="text" name="date" class="form-control" value="<?php echo date('d/m/Y'); ?>" required placeholder="dd/mm/yyyy">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="ti ti-file-check"></i> Genera
+                        </button>
+                    </div>
+                </div>
+                <div class="form-text mt-2">
+                    Verrà generato un PDF temporaneo con i valori inseriti, utilizzando il template e le coordinate configurati sopra. Il file non viene salvato nel server.
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <script>
     function previewStamp() {
         const form = document.getElementById('stampForm');

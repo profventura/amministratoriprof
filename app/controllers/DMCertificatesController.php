@@ -27,7 +27,7 @@ class DMCertificatesController {
       'association_name' => $assoc ? $assoc['association_name'] : 'Associazione AP',
       'member_name' => $mbr ? ($mbr['first_name'].' '.$mbr['last_name']) : '',
       'member_email' => $mbr ? ($mbr['email'] ?? '') : '',
-      'course_title' => $course['title'],
+      'course_title' => str_replace("\r\n", "\n", $course['title']), // Normalizza newline per PDFStampService
       'course_date' => $course['course_date'],
       'start_time' => $course['start_time'] ?? '',
       'end_time' => $course['end_time'] ?? '',
@@ -48,30 +48,35 @@ class DMCertificatesController {
         $mem = (new Membership())->getOrCreate($memberId, (int)$course['year']);
         
         $opts = [
-            'name_x' => (int)($assoc['certificate_stamp_name_x'] ?? 100),
-            'name_y' => (int)($assoc['certificate_stamp_name_y'] ?? 120),
-            'name_font_size' => (int)($assoc['certificate_stamp_name_font_size'] ?? 16),
-            'name_color' => $assoc['certificate_stamp_name_color'] ?? '#000000',
-            'name_font_family' => $assoc['certificate_stamp_name_font_family'] ?? 'Arial',
+            'name_x' => (int)($assoc['dm_certificate_stamp_name_x'] ?? 100),
+            'name_y' => (int)($assoc['dm_certificate_stamp_name_y'] ?? 120),
+            'name_font_size' => (int)($assoc['dm_certificate_stamp_name_font_size'] ?? 16),
+            'name_color' => $assoc['dm_certificate_stamp_name_color'] ?? '#000000',
+            'name_font_family' => $assoc['dm_certificate_stamp_name_font_family'] ?? 'Arial',
+            'name_bold' => $assoc['dm_certificate_stamp_name_bold'] ?? 1,
             
-            'number_x' => (int)($assoc['certificate_stamp_number_x'] ?? 100),
-            'number_y' => (int)($assoc['certificate_stamp_number_y'] ?? 140),
-            'number_font_size' => (int)($assoc['certificate_stamp_number_font_size'] ?? 16),
-            'number_color' => $assoc['certificate_stamp_number_color'] ?? '#000000',
-            'number_font_family' => $assoc['certificate_stamp_number_font_family'] ?? 'Arial',
+            'course_title_x' => (int)($assoc['dm_certificate_stamp_course_title_x'] ?? 100),
+            'course_title_y' => (int)($assoc['dm_certificate_stamp_course_title_y'] ?? 140),
+            'course_title_font_size' => (int)($assoc['dm_certificate_stamp_course_title_font_size'] ?? 16),
+            'course_title_color' => $assoc['dm_certificate_stamp_course_title_color'] ?? '#000000',
+            'course_title_font_family' => $assoc['dm_certificate_stamp_course_title_font_family'] ?? 'Arial',
+            'course_title_bold' => $assoc['dm_certificate_stamp_course_title_bold'] ?? 1,
+            'course_title_value' => $vars['course_title'], // Usa il valore normalizzato da $vars
 
-            'date_x' => (int)($assoc['certificate_stamp_date_x'] ?? 0),
-            'date_y' => (int)($assoc['certificate_stamp_date_y'] ?? 0),
-            'date_font_size' => (int)($assoc['certificate_stamp_date_font_size'] ?? 12),
-            'date_color' => $assoc['certificate_stamp_date_color'] ?? '#000000',
-            'date_font_family' => $assoc['certificate_stamp_date_font_family'] ?? 'Arial',
+            'date_x' => (int)($assoc['dm_certificate_stamp_date_x'] ?? 0),
+            'date_y' => (int)($assoc['dm_certificate_stamp_date_y'] ?? 0),
+            'date_font_size' => (int)($assoc['dm_certificate_stamp_date_font_size'] ?? 12),
+            'date_color' => $assoc['dm_certificate_stamp_date_color'] ?? '#000000',
+            'date_font_family' => $assoc['dm_certificate_stamp_date_font_family'] ?? 'Arial',
+            'date_bold' => $assoc['dm_certificate_stamp_date_bold'] ?? 0,
             'date_value' => date('d/m/Y'),
 
-            'year_x' => (int)($assoc['certificate_stamp_year_x'] ?? 0),
-            'year_y' => (int)($assoc['certificate_stamp_year_y'] ?? 0),
-            'year_font_size' => (int)($assoc['certificate_stamp_year_font_size'] ?? 12),
-            'year_color' => $assoc['certificate_stamp_year_color'] ?? '#000000',
-            'year_font_family' => $assoc['certificate_stamp_year_font_family'] ?? 'Arial',
+            'year_x' => (int)($assoc['dm_certificate_stamp_year_x'] ?? 0),
+            'year_y' => (int)($assoc['dm_certificate_stamp_year_y'] ?? 0),
+            'year_font_size' => (int)($assoc['dm_certificate_stamp_year_font_size'] ?? 12),
+            'year_color' => $assoc['dm_certificate_stamp_year_color'] ?? '#000000',
+            'year_font_family' => $assoc['dm_certificate_stamp_year_font_family'] ?? 'Arial',
+            'year_bold' => $assoc['dm_certificate_stamp_year_bold'] ?? 0,
             'year_value' => (string)$course['year'],
         ];
 
@@ -115,9 +120,30 @@ class DMCertificatesController {
         ? 'storage/documents/dm_certificate/'.$course['year'].'/'.$basename.'.pdf'
         : 'storage/documents/dm_certificate/'.$course['year'].'/'.$basename.'.html';
     }
-    $docId = (new Document())->create($memberId, 'dm_certificate', (int)$course['year'], $docPathPublic);
-    (new CourseParticipant())->setCertificate((int)$courseId, $memberId, $docId);
-    Helpers::addFlash('success','Attestato DM generato');
+    if ($docPathPublic) {
+        // Rimuovi vecchio certificato se esiste
+        $cpModel = new CourseParticipant();
+        $oldDocId = $cpModel->getCertificateId((int)$courseId, $memberId);
+        if ($oldDocId) {
+            $docModel = new Document();
+            $oldDoc = $docModel->find($oldDocId);
+            if ($oldDoc) {
+                // Elimina file fisico
+                $absPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $oldDoc['file_path']);
+                if (file_exists($absPath)) {
+                    @unlink($absPath);
+                }
+                // Elimina record DB
+                $docModel->delete($oldDocId);
+            }
+        }
+
+        $docId = (new Document())->create($memberId, 'dm_certificate', (int)$course['year'], $docPathPublic);
+        $cpModel->setCertificate((int)$courseId, $memberId, $docId);
+        Helpers::addFlash('success','Attestato DM generato');
+    } else {
+        Helpers::addFlash('danger','Errore generazione attestato (template o permessi mancanti)');
+    }
     Helpers::redirect('/courses/'.$courseId);
   }
   public function generateMass($courseId) {
@@ -137,7 +163,7 @@ class DMCertificatesController {
         'association_name' => $assoc ? $assoc['association_name'] : 'Associazione AP',
         'member_name' => $mbr['last_name'].' '.$mbr['first_name'],
         'member_email' => $mbr['email'] ?? '',
-        'course_title' => $course['title'],
+        'course_title' => str_replace("\r\n", "\n", $course['title']), // Normalizza newline
         'course_date' => $course['course_date'],
         'start_time' => $course['start_time'] ?? '',
         'end_time' => $course['end_time'] ?? '',
@@ -155,30 +181,35 @@ class DMCertificatesController {
             // Option B: PDF Stamping
             $outPdf = $outputAbsBase . '.pdf';
             $opts = [
-                'name_x' => (int)($assoc['certificate_stamp_name_x'] ?? 100),
-                'name_y' => (int)($assoc['certificate_stamp_name_y'] ?? 120),
-                'name_font_size' => (int)($assoc['certificate_stamp_name_font_size'] ?? 16),
-                'name_color' => $assoc['certificate_stamp_name_color'] ?? '#000000',
-                'name_font_family' => $assoc['certificate_stamp_name_font_family'] ?? 'Arial',
+                'name_x' => (int)($assoc['dm_certificate_stamp_name_x'] ?? 100),
+                'name_y' => (int)($assoc['dm_certificate_stamp_name_y'] ?? 120),
+                'name_font_size' => (int)($assoc['dm_certificate_stamp_name_font_size'] ?? 16),
+                'name_color' => $assoc['dm_certificate_stamp_name_color'] ?? '#000000',
+                'name_font_family' => $assoc['dm_certificate_stamp_name_font_family'] ?? 'Arial',
+                'name_bold' => $assoc['dm_certificate_stamp_name_bold'] ?? 1,
                 
-                'number_x' => (int)($assoc['certificate_stamp_number_x'] ?? 100),
-                'number_y' => (int)($assoc['certificate_stamp_number_y'] ?? 140),
-                'number_font_size' => (int)($assoc['certificate_stamp_number_font_size'] ?? 16),
-                'number_color' => $assoc['certificate_stamp_number_color'] ?? '#000000',
-                'number_font_family' => $assoc['certificate_stamp_number_font_family'] ?? 'Arial',
+                'course_title_x' => (int)($assoc['dm_certificate_stamp_course_title_x'] ?? 100),
+                'course_title_y' => (int)($assoc['dm_certificate_stamp_course_title_y'] ?? 140),
+                'course_title_font_size' => (int)($assoc['dm_certificate_stamp_course_title_font_size'] ?? 16),
+                'course_title_color' => $assoc['dm_certificate_stamp_course_title_color'] ?? '#000000',
+                'course_title_font_family' => $assoc['dm_certificate_stamp_course_title_font_family'] ?? 'Arial',
+                'course_title_bold' => $assoc['dm_certificate_stamp_course_title_bold'] ?? 1,
+                'course_title_value' => $vars['course_title'], // Usa il valore normalizzato da $vars
     
-                'date_x' => (int)($assoc['certificate_stamp_date_x'] ?? 0),
-                'date_y' => (int)($assoc['certificate_stamp_date_y'] ?? 0),
-                'date_font_size' => (int)($assoc['certificate_stamp_date_font_size'] ?? 12),
-                'date_color' => $assoc['certificate_stamp_date_color'] ?? '#000000',
-                'date_font_family' => $assoc['certificate_stamp_date_font_family'] ?? 'Arial',
+                'date_x' => (int)($assoc['dm_certificate_stamp_date_x'] ?? 0),
+                'date_y' => (int)($assoc['dm_certificate_stamp_date_y'] ?? 0),
+                'date_font_size' => (int)($assoc['dm_certificate_stamp_date_font_size'] ?? 12),
+                'date_color' => $assoc['dm_certificate_stamp_date_color'] ?? '#000000',
+                'date_font_family' => $assoc['dm_certificate_stamp_date_font_family'] ?? 'Arial',
+                'date_bold' => $assoc['dm_certificate_stamp_date_bold'] ?? 0,
                 'date_value' => date('d/m/Y'),
     
-                'year_x' => (int)($assoc['certificate_stamp_year_x'] ?? 0),
-                'year_y' => (int)($assoc['certificate_stamp_year_y'] ?? 0),
-                'year_font_size' => (int)($assoc['certificate_stamp_year_font_size'] ?? 12),
-                'year_color' => $assoc['certificate_stamp_year_color'] ?? '#000000',
-                'year_font_family' => $assoc['certificate_stamp_year_font_family'] ?? 'Arial',
+                'year_x' => (int)($assoc['dm_certificate_stamp_year_x'] ?? 0),
+                'year_y' => (int)($assoc['dm_certificate_stamp_year_y'] ?? 0),
+                'year_font_size' => (int)($assoc['dm_certificate_stamp_year_font_size'] ?? 12),
+                'year_color' => $assoc['dm_certificate_stamp_year_color'] ?? '#000000',
+                'year_font_family' => $assoc['dm_certificate_stamp_year_font_family'] ?? 'Arial',
+                'year_bold' => $assoc['dm_certificate_stamp_year_bold'] ?? 0,
                 'year_value' => (string)$course['year'],
             ];
             PDFStampService::stampMembershipCertificate($tplAbs, $outPdf, $vars['member_name'], $mem['id'], $opts);
@@ -221,11 +252,32 @@ class DMCertificatesController {
           ? 'storage/documents/dm_certificate/'.$course['year'].'/'.$basename.'.pdf'
           : 'storage/documents/dm_certificate/'.$course['year'].'/'.$basename.'.html';
       }
-      $docId = (new Document())->create((int)$mbr['member_id'], 'dm_certificate', (int)$course['year'], $docPathPublic);
-      (new CourseParticipant())->setCertificate((int)$courseId, (int)$mbr['member_id'], $docId);
-      $count++;
+      if ($docPathPublic) {
+        $cpModel = new CourseParticipant();
+        $oldDocId = $cpModel->getCertificateId($courseId, (int)$mbr['member_id']);
+        if ($oldDocId) {
+            $docModel = new Document();
+            $oldDoc = $docModel->find($oldDocId);
+            if ($oldDoc) {
+                $absPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $oldDoc['file_path']);
+                if (file_exists($absPath)) @unlink($absPath);
+                $docModel->delete($oldDocId);
+            }
+        }
+
+        $docId = (new Document())->create((int)$mbr['member_id'], 'dm_certificate', (int)$course['year'], $docPathPublic);
+        $cpModel->setCertificate((int)$courseId, (int)$mbr['member_id'], $docId);
+        $count++;
+      } else {
+        // Logga o notifica errore per questo utente?
+        // Per ora silenzioso o potremmo raccogliere errori
+      }
     }
-    Helpers::addFlash('success','Attestati DM generati: '.$count);
+    if ($count > 0) {
+        Helpers::addFlash('success','Attestati DM generati: '.$count);
+    } else {
+        Helpers::addFlash('warning','Nessun attestato generato (verificare template)');
+    }
     Helpers::redirect('/courses/'.$courseId);
   }
 }

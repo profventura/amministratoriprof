@@ -22,6 +22,10 @@ class Document extends Model {
     $st->execute([$base . '.%']);
     return $st->fetch();
   }
+  public function delete($id) {
+    $st = $this->pdo->prepare('DELETE FROM documents WHERE id=?');
+    return $st->execute([(int)$id]);
+  }
   public function find($id) {
     $st = $this->pdo->prepare('SELECT * FROM documents WHERE id=?');
     $st->execute([(int)$id]);

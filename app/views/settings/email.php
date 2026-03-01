@@ -148,27 +148,5 @@ $row = $data['row'] ?? [];
         </div>
       </div>
     </div>
-
-    <!-- Modal Debug Log -->
-    <div class="modal fade" id="debugModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Log Debug SMTP</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <pre class="bg-light p-3 border rounded" style="max-height: 400px; overflow-y: auto; font-size: 0.85rem;"><?php 
-                echo htmlspecialchars($_SESSION['last_email_debug'] ?? 'Nessun log disponibile'); 
-                // Pulisci dopo la visualizzazione (opzionale, ma meglio tenerlo finché non si naviga via)
-                // unset($_SESSION['last_email_debug']); 
-            ?></pre>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </div>

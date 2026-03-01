@@ -107,9 +107,9 @@
                             <p class="small text-muted mb-2"><?php echo htmlspecialchars(substr($c['description'] ?? '', 0, 80)) . '...'; ?></p>
                             <div class="d-flex justify-content-between align-items-center mt-2">
                                 <small class="text-primary fw-bold"><i class="ti ti-calendar me-1"></i> <?php echo date('d/m/Y', strtotime($c['course_date'])); ?></small>
-                                <form action="<?php echo \App\Core\Helpers::url('/portal/courses/'.$c['id'].'/join'); ?>" method="post">
+                                <form method="post" action="<?php echo \App\Core\Helpers::url('/portal/courses/'.$c['id'].'/join'); ?>">
                                     <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-                                    <button type="submit" class="btn btn-sm btn-primary">Iscriviti</button>
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3">Iscriviti</button>
                                 </form>
                             </div>
                         </div>

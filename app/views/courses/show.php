@@ -2,12 +2,33 @@
   <h3 class="mb-0">Dettaglio Corso</h3>
   <div>
     <a href="<?php echo \App\Core\Helpers::url('/courses/'.$course['id'].'/edit'); ?>" class="btn btn-outline-primary">Modifica</a>
-    <form method="post" action="<?php echo \App\Core\Helpers::url('/courses/'.$course['id'].'/delete'); ?>" class="d-inline">
-      <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-      <button class="btn btn-outline-danger" onclick="return confirm('Eliminare il corso?')">Elimina</button>
-    </form>
+    <button type="button" class="btn btn-outline-danger ms-2" data-bs-toggle="modal" data-bs-target="#deleteCourseModal">Elimina</button>
   </div>
 </div>
+
+<!-- Modal Conferma Eliminazione Corso -->
+<div class="modal fade" id="deleteCourseModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma Eliminazione</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Sei sicuro di voler eliminare questo corso?</p>
+        <p class="text-danger mb-0"><strong>Attenzione:</strong> Questa azione è irreversibile.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <form method="post" action="<?php echo \App\Core\Helpers::url('/courses/'.$course['id'].'/delete'); ?>" class="d-inline">
+          <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+          <button class="btn btn-danger">Elimina Corso</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="card">
   <div class="card-body">
     <div class="row">
@@ -16,7 +37,7 @@
         <p><strong>Descrizione:</strong> <?php echo htmlspecialchars($course['description']); ?></p>
       </div>
       <div class="col-md-6">
-        <p><strong>Data:</strong> <?php echo htmlspecialchars($course['course_date']); ?></p>
+        <p><strong>Data:</strong> <?php echo date('d/m/Y', strtotime($course['course_date'])); ?></p>
         <p><strong>Orario:</strong> <?php echo htmlspecialchars(($course['start_time'] ?? '').' - '.($course['end_time'] ?? '')); ?></p>
         <p><strong>Anno:</strong> <?php echo (int)$course['year']; ?></p>
       </div>
@@ -132,7 +153,7 @@
 
     <div class="table-responsive">
       <table class="table mb-0">
-        <thead><tr><th>Cognome</th><th>Nome</th><th>Email</th><th>Attestato</th><th></th></tr></thead>
+        <thead><tr><th>Cognome</th><th>Nome</th><th>Email</th><th>Attestato</th><th>Azioni</th></tr></thead>
         <tbody>
           <?php foreach ($participants as $p) { ?>
           <tr>
@@ -141,13 +162,21 @@
             <td><?php echo htmlspecialchars($p['email']); ?></td>
             <td>
               <?php if (!empty($p['certificate_document_id'])) { ?>
-                <div class="btn-group btn-group-sm">
-                    <a class="btn btn-outline-primary" href="<?php echo \App\Core\Helpers::url('/documents/'.$p['certificate_document_id'].'/download'); ?>" title="Scarica">
-                        <i class="ti ti-download"></i>
+                <div class="d-flex gap-1">
+                    <a class="btn btn-sm btn-outline-primary" style="border-radius: 4px !important;" href="<?php echo \App\Core\Helpers::url('/documents/'.$p['certificate_document_id'].'/view'); ?>" target="_blank" title="Visualizza">
+                        Visualizza
+                    </a>
+                    <a class="btn btn-sm btn-outline-secondary" style="border-radius: 4px !important;" href="<?php echo \App\Core\Helpers::url('/documents/'.$p['certificate_document_id'].'/download'); ?>" title="Scarica">
+                        Scarica
                     </a>
                     <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/'.$p['certificate_document_id'].'/email'); ?>" class="d-inline" onsubmit="return confirm('Inviare l\'attestato via email a <?php echo htmlspecialchars($p['email']); ?>?');">
                         <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-                        <button class="btn btn-outline-info" title="Invia Email"><i class="ti ti-mail"></i></button>
+                        <button class="btn btn-sm btn-outline-info" style="border-radius: 4px !important;" title="Invia Email">Invia Email</button>
+                    </form>
+                    <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/dm-certificate/'.$course['id'].'/generate'); ?>" class="d-inline" onsubmit="return confirm('Rigenerare l\'attestato?');">
+                        <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+                        <input type="hidden" name="member_id" value="<?php echo (int)$p['member_id']; ?>">
+                        <button class="btn btn-sm btn-outline-secondary" style="border-radius: 4px !important;" title="Rigenera">Rigenera</button>
                     </form>
                 </div>
               <?php } else { ?>

@@ -558,30 +558,21 @@ class SettingsController {
       // Usa EmailService che legge dal DB. 
       // Richiediamo che l'utente salvi prima, per semplicità e coerenza.
       
-      // Passiamo true come ultimo parametro per ottenere il debug log
+      // Passiamo false come ultimo parametro (debug off)
       $res = \App\Services\EmailService::send(
           $to, 
           'Test User', 
           'Test Configurazione Email - Gestionale', 
           'Se leggi questa email, la configurazione SMTP è corretta.',
           [],
-          true
+          false
       );
       
       if ($res['success']) {
           $msg = 'Email di test inviata con successo a ' . htmlspecialchars($to);
-          if (!empty($res['debug'])) {
-             // Salviamo il debug in sessione per mostrarlo nel modal
-             $_SESSION['last_email_debug'] = $res['debug'];
-             $msg .= ' <br><a href="#" data-bs-toggle="modal" data-bs-target="#debugModal">Vedi Log SMTP</a>';
-          }
           Helpers::addFlash('success', $msg);
       } else {
           $msg = 'Errore invio: ' . htmlspecialchars($res['error']);
-          if (!empty($res['debug'])) {
-             $_SESSION['last_email_debug'] = $res['debug'];
-             $msg .= ' <br><a href="#" data-bs-toggle="modal" data-bs-target="#debugModal">Vedi Log SMTP</a>';
-          }
           Helpers::addFlash('danger', $msg);
       }
       
@@ -626,57 +617,77 @@ class SettingsController {
   }
 
   public function updateAttestatiStamp() {
-      // Per semplicità usiamo la stessa logica di updateStamp ma mappiamo su campi diversi se necessario
-      // In questo caso, riutilizziamo updateStamp o creiamo logica parallela se i campi sono diversi.
-      // Poiché la richiesta è "allo stesso modo dei certificati", assumiamo campi simili ma salvati forse su colonne diverse o le stesse se il template è unico?
-      // L'utente dice "allo stesso modo dei certificati (solo i pdf) vanno fatti gli attestati".
-      // La pagina esistente /settings gestisce "Certificato Iscrizione" (membership_certificate).
-      // Questa nuova pagina gestisce "Attestato DM" (dm_certificate).
-      // Nel DB settings abbiamo `dm_certificate_template_docx_path`.
-      
-      // Mappiamo i campi del form ai campi del DB per gli attestati DM
-      // Campi DM: name, course_title, date, etc.
-      // Per ora riusiamo la struttura di updateStamp ma puntiamo a colonne diverse se esistono, o aggiungiamo colonne.
-      // Verifichiamo lo schema settings.
-      
-      $this->updateStampGeneric('dm');
+      $this->updateStampGeneric('dm_certificate');
   }
 
   public function ricevute() {
     Auth::require();
     $pdo = DB::conn();
     $row = $pdo->query('SELECT * FROM settings ORDER BY id DESC LIMIT 1')->fetch();
-    Helpers::view('settings/ricevute', ['title'=>'Impostazioni Ricevute','row'=>$row]);
+    
+    // Leggi template HTML se esiste
+    $htmlPath = dirname(__DIR__, 1) . '/templates/documents/receipt_template.html';
+    $htmlContent = '';
+    if (file_exists($htmlPath)) {
+        $htmlContent = file_get_contents($htmlPath);
+    }
+    
+    Helpers::view('settings/ricevute', ['title'=>'Impostazioni Ricevute','row'=>$row, 'htmlContent'=>$htmlContent]);
   }
 
   public function updateRicevuteTemplate() {
     Auth::require();
     if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
-    if (!isset($_FILES['template']) || $_FILES['template']['error'] !== UPLOAD_ERR_OK) {
-      Helpers::addFlash('danger', 'Seleziona un file .pdf');
-      Helpers::redirect('/settings/ricevute'); return;
+    
+    $html = $_POST['html_content'] ?? '';
+    if (empty($html)) {
+        Helpers::addFlash('danger', 'Il contenuto HTML non può essere vuoto');
+        Helpers::redirect('/settings/ricevute');
+        return;
     }
-    $name = basename($_FILES['template']['name']);
-    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    if ($ext !== 'pdf') {
-      Helpers::addFlash('danger', 'Il file deve essere .pdf');
-      Helpers::redirect('/settings/ricevute'); return;
-    }
+    
     $destDir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 1) . '/templates/documents');
     if (!is_dir($destDir)) { mkdir($destDir, 0777, true); }
-    $abs = $destDir . DIRECTORY_SEPARATOR . 'receipt_template.pdf';
-    move_uploaded_file($_FILES['template']['tmp_name'], $abs);
+    $abs = $destDir . DIRECTORY_SEPARATOR . 'receipt_template.html';
     
-    $orientation = $_POST['orientation'] ?? 'P';
-    if (!in_array($orientation, ['P', 'L'])) $orientation = 'P';
+    file_put_contents($abs, $html);
     
-    // Aggiorna DB
-    $rel = 'app/templates/documents/receipt_template.pdf';
+    // Aggiorniamo path nel DB
+    $rel = 'app/templates/documents/receipt_template.html';
     $pdo = DB::conn();
-    $pdo->prepare("UPDATE settings SET receipt_template_path=?, receipt_orientation=?, updated_at=NOW() ORDER BY id DESC LIMIT 1")->execute([$rel, $orientation]);
+    $pdo->prepare("UPDATE settings SET receipt_template_path=?, updated_at=NOW() ORDER BY id DESC LIMIT 1")->execute([$rel]);
     
-    Helpers::addFlash('success', 'Template ricevuta aggiornato');
+    Helpers::addFlash('success', 'Template HTML ricevuta aggiornato');
     Helpers::redirect('/settings/ricevute');
+  }
+
+  public function previewRicevuteHtml() {
+    Auth::require();
+    
+    $html = $_POST['html_content'] ?? '';
+    if (empty($html)) {
+        $htmlPath = dirname(__DIR__, 1) . '/templates/documents/receipt_template.html';
+        if (file_exists($htmlPath)) {
+            $html = file_get_contents($htmlPath);
+        } else {
+            echo "Nessun template trovato."; return;
+        }
+    }
+    
+    // Dati finti
+    $data = [
+        '{{receipt_number}}' => '24',
+        '{{year}}' => date('Y'),
+        '{{receipt_date}}' => date('d/m/Y'),
+        '{{billing_details}}' => "<strong>TECCOND SRLS</strong><br>Piazza della Libertà 3<br>per <strong>IEVA FRANCESCO</strong><br>C.F./P.IVA: 15995851001",
+        '{{description}}' => 'QUOTA ANNUALE ISCRIZIONE',
+        '{{item_description}}' => 'QUOTA ANNUALE ASSOCIAZIONE - IEVA FRANCESCO',
+        '{{amount}}' => '180,00',
+        '{{payment_date}}' => date('d/m/Y')
+    ];
+    
+    $preview = str_replace(array_keys($data), array_values($data), $html);
+    echo $preview;
   }
 
   public function updateRicevuteStamp() {
@@ -788,7 +799,7 @@ class SettingsController {
             'amount' => 'amount',
             'description' => 'description'
         ];
-    } elseif ($prefix === 'dm') {
+    } elseif ($prefix === 'dm_certificate') {
         $fieldMap = [
             'name' => 'name', 
             'course_title' => 'course_title', 
@@ -811,6 +822,7 @@ class SettingsController {
     foreach ($fieldMap as $formField => $dbField) {
         foreach ($props as $p) {
             $inputKey = "{$formField}_{$p}"; // es. number_x
+            
             if (isset($_POST[$inputKey])) {
                 $val = $_POST[$inputKey];
                 if ($p === 'x' || $p === 'y' || $p === 'font_size') $val = (int)$val;
@@ -818,6 +830,12 @@ class SettingsController {
                 
                 $dbCol = "{$prefix}_stamp_{$dbField}_{$p}";
                 $params[$dbCol] = $val;
+            } else {
+                // Gestione checkbox non inviati (unchecked)
+                if ($p === 'bold') {
+                    $dbCol = "{$prefix}_stamp_{$dbField}_{$p}";
+                    $params[$dbCol] = 0;
+                }
             }
         }
     }
@@ -929,6 +947,10 @@ class SettingsController {
     $number = "12345";
     $opts['date_value'] = date('d/m/Y');
     $opts['year_value'] = date('Y');
+    
+    // Hardcode allineamento come richiesto: Data e Numero a Sinistra
+    $opts['date_align'] = 'L';
+    $opts['number_align'] = 'L';
     
     // Debug grid
     if (!empty($_POST['debug_grid'])) {
@@ -1115,5 +1137,144 @@ class SettingsController {
     
     fclose($out);
     exit;
+  }
+
+  public function generateManualCertificate() {
+      Auth::require();
+      if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
+      
+      $name = trim($_POST['name'] ?? '');
+      $number = trim($_POST['number'] ?? '');
+      $year = trim($_POST['year'] ?? date('Y'));
+      $date = trim($_POST['date'] ?? date('d/m/Y'));
+      
+      if (empty($name) || empty($number)) {
+          Helpers::addFlash('danger', 'Nome e Numero sono obbligatori');
+          Helpers::redirect('/settings/certificati');
+          return;
+      }
+      
+      $pdo = DB::conn();
+      $s = $pdo->query('SELECT * FROM settings ORDER BY id DESC LIMIT 1')->fetch();
+      $tplRel = $s['membership_certificate_template_docx_path'] ?? '';
+      
+      if (!$tplRel || !file_exists($tplAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $tplRel))) {
+          Helpers::addFlash('danger', 'Template non trovato');
+          Helpers::redirect('/settings/certificati');
+          return;
+      }
+      
+      // Parametri stamp
+      $opts = [];
+      $fields = ['name', 'number', 'date', 'year'];
+      foreach ($fields as $f) {
+          $opts["{$f}_x"] = (int)($s["certificate_stamp_{$f}_x"] ?? 0);
+          $opts["{$f}_y"] = (int)($s["certificate_stamp_{$f}_y"] ?? 0);
+          $opts["{$f}_font_size"] = (int)($s["certificate_stamp_{$f}_font_size"] ?? 12);
+          $opts["{$f}_color"] = $s["certificate_stamp_{$f}_color"] ?? '#000000';
+          $opts["{$f}_font_family"] = $s["certificate_stamp_{$f}_font_family"] ?? 'Arial';
+          $opts["{$f}_bold"] = !empty($s["certificate_stamp_{$f}_bold"]);
+      }
+      
+      $opts['date_value'] = $date;
+      $opts['year_value'] = $year;
+      $opts['date_align'] = 'L';
+      $opts['number_align'] = 'L';
+      
+      $outDir = sys_get_temp_dir();
+      $outFile = tempnam($outDir, 'cert_manual_');
+      unlink($outFile);
+      $outFile .= '.pdf';
+      
+      $res = \App\Services\PDFStampService::stampMembershipCertificate($tplAbs, $outFile, $name, $number, $opts);
+      
+      if ($res && file_exists($outFile)) {
+          header('Content-Type: application/pdf');
+          header('Content-Disposition: inline; filename="certificato_manuale.pdf"');
+          header('Content-Length: ' . filesize($outFile));
+          readfile($outFile);
+          @unlink($outFile);
+          exit;
+      } else {
+          Helpers::addFlash('danger', 'Errore generazione');
+          Helpers::redirect('/settings/certificati');
+      }
+  }
+
+  public function generateManualAttestato() {
+      Auth::require();
+      if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
+      
+      $name = trim($_POST['name'] ?? '');
+      // Usa un trim leggermente diverso per mantenere newline se presenti ma rimuovere spazi estremi?
+      // No, trim() rimuove solo whitespace da inizio e fine. Le newline interne rimangono.
+      // Se il browser invia \r\n, vogliamo normalizzarlo? 
+      // PDFStampService usa explode("\n"), quindi \r\n va bene (o meglio, convertiamo in \n).
+      
+      $course_title = trim($_POST['course_title'] ?? '');
+      $course_title = str_replace("\r\n", "\n", $course_title); // Normalizza newline
+      
+      $year = trim($_POST['year'] ?? date('Y'));
+      $date = trim($_POST['date'] ?? date('d/m/Y'));
+      
+      if (empty($name) || empty($course_title)) {
+          Helpers::addFlash('danger', 'Nome e Argomento sono obbligatori');
+          Helpers::redirect('/settings/attestati');
+          return;
+      }
+      
+      $pdo = DB::conn();
+      $s = $pdo->query('SELECT * FROM settings ORDER BY id DESC LIMIT 1')->fetch();
+      $tplRel = $s['dm_certificate_template_docx_path'] ?? '';
+      
+      if (!$tplRel || !file_exists($tplAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $tplRel))) {
+          Helpers::addFlash('danger', 'Template non trovato');
+          Helpers::redirect('/settings/attestati');
+          return;
+      }
+      
+      // Parametri stamp
+      $opts = [];
+      $fields = ['name', 'course_title', 'date', 'year'];
+      foreach ($fields as $f) {
+          $opts["{$f}_x"] = (int)($s["dm_certificate_stamp_{$f}_x"] ?? 0);
+          $opts["{$f}_y"] = (int)($s["dm_certificate_stamp_{$f}_y"] ?? 0);
+          $opts["{$f}_font_size"] = (int)($s["dm_certificate_stamp_{$f}_font_size"] ?? 12);
+          $opts["{$f}_color"] = $s["dm_certificate_stamp_{$f}_color"] ?? '#000000';
+          $opts["{$f}_font_family"] = $s["dm_certificate_stamp_{$f}_font_family"] ?? 'Arial';
+          $opts["{$f}_bold"] = !empty($s["dm_certificate_stamp_{$f}_bold"]);
+      }
+      
+      $opts['course_title_value'] = $course_title;
+      $opts['date_value'] = $date;
+      $opts['year_value'] = $year;
+      // Per attestati non è stato specificato allineamento speciale, manteniamo default (Center) o come da config
+      // Se necessario, si può aggiungere $opts['field_align'] = 'L' etc.
+      
+      $outDir = sys_get_temp_dir();
+      $outFile = tempnam($outDir, 'attestato_manual_');
+      unlink($outFile);
+      $outFile .= '.pdf';
+      
+      // Usiamo stampGeneric o stampMembershipCertificate?
+      // stampMembershipCertificate è un wrapper che setta name_value e number_value.
+      // Qui abbiamo course_title_value.
+      // stampGeneric è più flessibile. Ma stampMembershipCertificate chiama stampGeneric.
+      // Possiamo chiamare stampGeneric direttamente, passando name_value in opts.
+      
+      $opts['name_value'] = $name;
+      $res = \App\Services\PDFStampService::stampGeneric($tplAbs, $outFile, $opts);
+      
+      if ($res && file_exists($outFile)) {
+          header('Content-Type: application/pdf');
+          header('Content-Disposition: inline; filename="attestato_manuale.pdf"');
+          header('Content-Length: ' . filesize($outFile));
+          readfile($outFile);
+          @unlink($outFile);
+          exit;
+      } else {
+          Helpers::addFlash('danger', 'Errore generazione');
+          Helpers::redirect('/settings/attestati');
+      }
   }
 }

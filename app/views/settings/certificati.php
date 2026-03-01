@@ -85,8 +85,20 @@ $row = $data['row'] ?? [];
                         <input type="number" name="name_y" id="in_name_y" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_name_y'] ?? 120); ?>">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small mb-1">Dimensione Font</label>
+                        <label class="form-label small mb-1">Size</label>
                         <input type="number" name="name_font_size" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_name_font_size'] ?? 16); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Color</label>
+                        <input type="color" name="name_color" class="form-control form-control-sm form-control-color w-100" value="<?php echo htmlspecialchars($row['certificate_stamp_name_color'] ?? '#000000'); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Font</label>
+                        <select name="name_font_family" class="form-select form-select-sm">
+                            <option value="Arial" <?php echo ($row['certificate_stamp_name_font_family']??'')=='Arial'?'selected':''; ?>>Arial</option>
+                            <option value="Helvetica" <?php echo ($row['certificate_stamp_name_font_family']??'')=='Helvetica'?'selected':''; ?>>Helvetica</option>
+                            <option value="Times" <?php echo ($row['certificate_stamp_name_font_family']??'')=='Times'?'selected':''; ?>>Times</option>
+                        </select>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="name_bold" value="1" <?php echo ($row['certificate_stamp_name_bold']??1)?'checked':''; ?>>
@@ -110,8 +122,20 @@ $row = $data['row'] ?? [];
                         <input type="number" name="number_y" id="in_number_y" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_number_y'] ?? 140); ?>">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small mb-1">Dimensione Font</label>
+                        <label class="form-label small mb-1">Size</label>
                         <input type="number" name="number_font_size" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_number_font_size'] ?? 16); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Color</label>
+                        <input type="color" name="number_color" class="form-control form-control-sm form-control-color w-100" value="<?php echo htmlspecialchars($row['certificate_stamp_number_color'] ?? '#000000'); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Font</label>
+                        <select name="number_font_family" class="form-select form-select-sm">
+                            <option value="Arial" <?php echo ($row['certificate_stamp_number_font_family']??'')=='Arial'?'selected':''; ?>>Arial</option>
+                            <option value="Helvetica" <?php echo ($row['certificate_stamp_number_font_family']??'')=='Helvetica'?'selected':''; ?>>Helvetica</option>
+                            <option value="Times" <?php echo ($row['certificate_stamp_number_font_family']??'')=='Times'?'selected':''; ?>>Times</option>
+                        </select>
                     </div>
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="number_bold" value="1" <?php echo ($row['certificate_stamp_number_bold']??1)?'checked':''; ?>>
@@ -135,8 +159,24 @@ $row = $data['row'] ?? [];
                         <input type="number" name="year_y" id="in_year_y" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_year_y'] ?? 0); ?>">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small mb-1">Dimensione Font</label>
+                        <label class="form-label small mb-1">Size</label>
                         <input type="number" name="year_font_size" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_year_font_size'] ?? 12); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Color</label>
+                        <input type="color" name="year_color" class="form-control form-control-sm form-control-color w-100" value="<?php echo htmlspecialchars($row['certificate_stamp_year_color'] ?? '#000000'); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Font</label>
+                        <select name="year_font_family" class="form-select form-select-sm">
+                            <option value="Arial" <?php echo ($row['certificate_stamp_year_font_family']??'')=='Arial'?'selected':''; ?>>Arial</option>
+                            <option value="Helvetica" <?php echo ($row['certificate_stamp_year_font_family']??'')=='Helvetica'?'selected':''; ?>>Helvetica</option>
+                            <option value="Times" <?php echo ($row['certificate_stamp_year_font_family']??'')=='Times'?'selected':''; ?>>Times</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="year_bold" value="1" <?php echo ($row['certificate_stamp_year_bold']??0)?'checked':''; ?>>
+                        <label class="form-check-label small">Grassetto</label>
                     </div>
                 </div>
             </div>
@@ -156,8 +196,24 @@ $row = $data['row'] ?? [];
                         <input type="number" name="date_y" id="in_date_y" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_date_y'] ?? 0); ?>">
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small mb-1">Dimensione Font</label>
+                        <label class="form-label small mb-1">Size</label>
                         <input type="number" name="date_font_size" class="form-control form-control-sm" value="<?php echo (int)($row['certificate_stamp_date_font_size'] ?? 12); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Color</label>
+                        <input type="color" name="date_color" class="form-control form-control-sm form-control-color w-100" value="<?php echo htmlspecialchars($row['certificate_stamp_date_color'] ?? '#000000'); ?>">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Font</label>
+                        <select name="date_font_family" class="form-select form-select-sm">
+                            <option value="Arial" <?php echo ($row['certificate_stamp_date_font_family']??'')=='Arial'?'selected':''; ?>>Arial</option>
+                            <option value="Helvetica" <?php echo ($row['certificate_stamp_date_font_family']??'')=='Helvetica'?'selected':''; ?>>Helvetica</option>
+                            <option value="Times" <?php echo ($row['certificate_stamp_date_font_family']??'')=='Times'?'selected':''; ?>>Times</option>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="date_bold" value="1" <?php echo ($row['certificate_stamp_date_bold']??0)?'checked':''; ?>>
+                        <label class="form-check-label small">Grassetto</label>
                     </div>
                 </div>
             </div>
@@ -173,6 +229,43 @@ $row = $data['row'] ?? [];
         </div>
       </div>
     </form>
+
+    <hr class="my-4">
+    
+    <h5 class="mb-3">Generazione Manuale Certificato</h5>
+    <div class="card bg-light border-0">
+        <div class="card-body">
+            <form method="post" action="<?php echo Helpers::url('/settings/manual-certificate'); ?>" target="_blank">
+                <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Nome Socio</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Es. Mario Rossi">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Numero Socio</label>
+                        <input type="text" name="number" class="form-control" required placeholder="Es. 123">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Anno</label>
+                        <input type="number" name="year" class="form-control" value="<?php echo date('Y'); ?>" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Data Emissione</label>
+                        <input type="text" name="date" class="form-control" value="<?php echo date('d/m/Y'); ?>" required placeholder="dd/mm/yyyy">
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="ti ti-file-check"></i> Genera
+                        </button>
+                    </div>
+                </div>
+                <div class="form-text mt-2">
+                    Verrà generato un PDF temporaneo con i valori inseriti, utilizzando il template e le coordinate configurati sopra. Il file non viene salvato nel server.
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- Librerie PDF.js e Interact.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>

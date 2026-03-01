@@ -7,6 +7,41 @@ use App\Core\DB;
 
 class DocumentsController {
 
+  // Metodo per visualizzare inline (stream)
+  public function view($id) {
+    Auth::require();
+    
+    $pdo = DB::conn();
+    $stmt = $pdo->prepare("SELECT * FROM documents WHERE id = ?");
+    $stmt->execute([(int)$id]);
+    $doc = $stmt->fetch();
+    
+    if (!$doc) { http_response_code(404); echo 'Documento non trovato'; return; }
+    
+    $rel = $doc['file_path'];
+    $rel = str_replace(['\\', '..'], ['/', ''], $rel);
+    $abs = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $rel;
+    
+    if (!is_file($abs)) { http_response_code(404); echo 'File fisico non trovato'; return; }
+    
+    $ext = strtolower(pathinfo($abs, PATHINFO_EXTENSION));
+    $mime = ($ext === 'pdf') ? 'application/pdf' : 'text/html; charset=utf-8';
+    
+    // Disabilita compressione zlib per evitare problemi con PDF
+    if (ini_get('zlib.output_compression')) {
+        ini_set('zlib.output_compression', 'Off');
+    }
+
+    header('Content-Type: '.$mime);
+    header('Content-Length: '.filesize($abs));
+    header('Content-Disposition: inline; filename="'.basename($abs).'"');
+    header('Cache-Control: private, max-age=0, must-revalidate');
+    header('Pragma: public');
+    
+    readfile($abs);
+    exit;
+  }
+
   // Metodo originale download per ID
   public function download($id) {
     Auth::require();

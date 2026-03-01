@@ -2,7 +2,7 @@
 namespace App\Models;
 class Course extends Model {
   public function all() {
-    $st = $this->pdo->query('SELECT id, title, description, course_date, start_time, end_time, year FROM courses ORDER BY course_date DESC, id DESC');
+    $st = $this->pdo->query('SELECT * FROM courses ORDER BY course_date DESC, id DESC');
     return $st->fetchAll();
   }
   public function find($id) {
