@@ -268,8 +268,9 @@ class MembersController {
     
     // 1. Iscrizioni e pagamenti (Storia rinnovo)
     // Usiamo una query che unisce memberships e payments per mostrare Rinnovo, Data, Importo
+    // FIX: Aggiunto m.id per il link di modifica
     $renewals = $pdo->query("
-        SELECT m.year, m.status, m.renewal_date, p.payment_date, p.amount
+        SELECT m.id, m.year, m.status, m.renewal_date, p.payment_date, p.amount
         FROM memberships m
         LEFT JOIN payments p ON p.membership_id = m.id
         WHERE m.member_id = {$row['id']}

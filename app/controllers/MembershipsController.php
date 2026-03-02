@@ -21,7 +21,7 @@ class MembershipsController {
 
   public function update($id) {
     Auth::require();
-    if (!Helpers::validateCSRF()) { return; }
+    if (!\App\Core\CSRF::validate($_POST['csrf'] ?? '')) { return; }
     
     $data = [
       'status' => $_POST['status'] ?? 'pending',
@@ -38,7 +38,7 @@ class MembershipsController {
 
   public function delete($id) {
     Auth::require();
-    if (!Helpers::validateCSRF()) { return; }
+    if (!\App\Core\CSRF::validate($_POST['csrf'] ?? '')) { return; }
     
     $m = new Membership();
     $row = $m->find((int)$id);
@@ -53,7 +53,7 @@ class MembershipsController {
 
   public function bulkAction() {
       Auth::require();
-      if (!Helpers::validateCSRF()) { return; }
+      if (!\App\Core\CSRF::validate($_POST['csrf'] ?? '')) { return; }
 
       $action = $_POST['action'] ?? '';
       $ids = $_POST['selected_ids'] ?? [];

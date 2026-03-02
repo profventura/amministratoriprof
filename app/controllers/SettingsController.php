@@ -5,6 +5,8 @@ use App\Core\CSRF;
 use App\Core\Helpers;
 use App\Core\DB;
 use App\Services\DocxTemplateService;
+use TCPDF;
+
 class SettingsController {
   public function index() {
     Auth::require();
@@ -630,9 +632,257 @@ class SettingsController {
     $htmlContent = '';
     if (file_exists($htmlPath)) {
         $htmlContent = file_get_contents($htmlPath);
+        // Sostituisci placeholder con URL web per l'editor
+        $htmlContent = str_replace('{{logo_src}}', '/amministratoriprof/public/images/logos/ap_logo.jpg', $htmlContent);
     }
     
-    Helpers::view('settings/ricevute', ['title'=>'Impostazioni Ricevute','row'=>$row, 'htmlContent'=>$htmlContent]);
+    // Recupera soci per la select
+    $members = $pdo->query("SELECT id, first_name, last_name, tax_code, billing_cf, billing_piva, address, city, zip_code, province FROM members WHERE deleted_at IS NULL ORDER BY last_name, first_name")->fetchAll();
+    
+    Helpers::view('settings/ricevute', ['title'=>'Impostazioni Ricevute','row'=>$row, 'htmlContent'=>$htmlContent, 'members'=>$members]);
+  }
+
+  private function getLogoBase64() {
+      $path = dirname(__DIR__, 2) . '/public/images/logos/ap_logo.jpg';
+      if (file_exists($path)) {
+          $type = pathinfo($path, PATHINFO_EXTENSION);
+          $data = file_get_contents($path);
+          return 'data:image/' . $type . ';base64,' . base64_encode($data);
+      }
+      return '';
+  }
+
+  private function replaceLogoForPdf($html) {
+      $logo = $this->getLogoBase64();
+      if ($logo) {
+          $html = str_replace('{{logo_src}}', $logo, $html);
+          // Gestisci anche URL web se presente (es. salvato da editor)
+          $html = str_replace('/amministratoriprof/public/images/logos/ap_logo.jpg', $logo, $html);
+          $html = str_replace('http://localhost/amministratoriprof/public/images/logos/ap_logo.jpg', $logo, $html);
+      }
+      return $html;
+  }
+
+  public function previewManualReceiptPdf() {
+      Auth::require();
+      
+      // Dati dal form
+      $receipt_number = "ANTEPRIMA";
+      $year = $_POST['year'] ?? date('Y');
+      $date = $_POST['date'] ?? date('d/m/Y');
+      $amount = $_POST['amount'] ?? '0,00';
+      $description = $_POST['description'] ?? '';
+      $item_description = $_POST['item_description'] ?? '';
+      $billing_details = $_POST['billing_details'] ?? '';
+      $payment_date = $_POST['payment_date'] ?? date('d/m/Y');
+      
+      // Template HTML
+      $htmlPath = dirname(__DIR__, 1) . '/templates/documents/receipt_template.html';
+      if (!file_exists($htmlPath)) { echo "Template non trovato"; return; }
+      $html = file_get_contents($htmlPath);
+      
+      $placeholders = [
+          '{{receipt_number}}' => $receipt_number,
+          '{{year}}' => $year,
+          '{{receipt_date}}' => $date,
+          '{{billing_details}}' => nl2br($billing_details),
+          '{{description}}' => $description,
+          '{{item_description}}' => $item_description,
+          '{{amount}}' => $amount,
+          '{{payment_date}}' => $payment_date
+      ];
+      
+      $html = str_replace(array_keys($placeholders), array_values($placeholders), $html);
+      
+      // Sostituisci logo con Base64
+      $html = $this->replaceLogoForPdf($html);
+      
+      // Genera PDF al volo
+      if (class_exists('TCPDF')) {
+          $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+          $pdf->SetCreator('Gestionale');
+          $pdf->SetAuthor('Gestionale');
+          $pdf->SetTitle('Anteprima Ricevuta');
+          $pdf->setPrintHeader(false);
+          $pdf->setPrintFooter(false);
+          $pdf->SetMargins(0, 0, 0);
+          $pdf->SetAutoPageBreak(TRUE, 0);
+          $pdf->AddPage();
+          $pdf->SetFont('dejavusans', '', 10);
+          $pdf->writeHTML($html, true, false, true, false, '');
+          $pdf->Output('anteprima_ricevuta.pdf', 'I');
+          exit;
+      } else {
+          echo "TCPDF non installato";
+      }
+  }
+
+  public function previewReceiptPdfRaw() {
+      Auth::require();
+      
+      $html = $_POST['html_content'] ?? '';
+      if (empty($html)) { echo "Nessun contenuto HTML"; return; }
+      
+      // Dati finti (gli stessi di previewRicevuteHtml)
+      $data = [
+          '{{receipt_number}}' => '24',
+          '{{year}}' => date('Y'),
+          '{{receipt_date}}' => date('d/m/Y'),
+          '{{billing_details}}' => "<strong>TECCOND SRLS</strong><br>Piazza della Libertà 3<br>per <strong>IEVA FRANCESCO</strong><br>C.F./P.IVA: 15995851001",
+          '{{description}}' => 'QUOTA ANNUALE ISCRIZIONE',
+          '{{item_description}}' => 'QUOTA ANNUALE ASSOCIAZIONE - IEVA FRANCESCO',
+          '{{amount}}' => '180,00',
+          '{{payment_date}}' => date('d/m/Y')
+      ];
+      
+      $html = str_replace(array_keys($data), array_values($data), $html);
+      
+      if (class_exists(TCPDF::class)) {
+          $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+          $pdf->SetCreator('Gestionale');
+          $pdf->SetAuthor('Gestionale');
+          $pdf->SetTitle('Anteprima Ricevuta Template');
+          $pdf->setPrintHeader(false);
+          $pdf->setPrintFooter(false);
+          $pdf->SetMargins(0, 0, 0);
+          $pdf->SetAutoPageBreak(TRUE, 0);
+          $pdf->AddPage();
+          $pdf->SetFont('dejavusans', '', 10);
+          $pdf->writeHTML($html, true, false, true, false, '');
+          $pdf->Output('anteprima_ricevuta_template.pdf', 'I');
+          exit;
+      } else {
+          echo "TCPDF non installato";
+      }
+  }
+
+  public function createManualReceipt() {
+      Auth::require();
+      if (!CSRF::validate($_POST['csrf'] ?? '')) { http_response_code(400); echo 'Token CSRF non valido'; return; }
+      
+      $member_id = $_POST['member_id'] ?? '';
+      $year = $_POST['year'] ?? date('Y');
+      $date = $_POST['date'] ?? date('Y-m-d'); // Input date type usually Y-m-d
+      // Se input type="text" (datepicker manuale), normalizza
+      if (strpos($date, '/') !== false) {
+          $d = \DateTime::createFromFormat('d/m/Y', $date);
+          $date = $d ? $d->format('Y-m-d') : date('Y-m-d');
+      }
+      
+      $payment_date_raw = $_POST['payment_date'] ?? date('d/m/Y');
+      $payment_date = $payment_date_raw;
+      if (strpos($payment_date, '/') !== false) {
+          $d = \DateTime::createFromFormat('d/m/Y', $payment_date);
+          $payment_date = $d ? $d->format('Y-m-d') : date('Y-m-d');
+      }
+
+      $amount = str_replace(',', '.', $_POST['amount'] ?? '0');
+      $method = $_POST['method'] ?? 'cash'; // enum
+      $description = $_POST['description'] ?? ''; // Oggetto prestazione
+      $item_description = $_POST['item_description'] ?? ''; // Riga tabella
+      $billing_details = $_POST['billing_details'] ?? '';
+      
+      if (empty($member_id)) {
+          Helpers::addFlash('danger', 'Selezionare un socio');
+          Helpers::redirect('/settings/ricevute'); return;
+      }
+      
+      $pdo = DB::conn();
+      
+      // Calcolo numero ricevuta
+      // Cerca il max numero per l'anno
+      // Attenzione: receipt_number è varchar(50) ma contiene numeri progressivi. 
+      // Se usiamo formato "2024/001" o solo "1", "2".
+      // Il sistema sembra usare settings.receipt_sequence_current se year matches settings.receipt_sequence_year
+      // Oppure MAX(CAST(receipt_number AS UNSIGNED)) WHERE receipt_year = ?
+      
+      // Controlliamo settings
+      $sett = $pdo->query("SELECT * FROM settings ORDER BY id DESC LIMIT 1")->fetch();
+      $seq = 0;
+      if ($sett && $sett['receipt_sequence_year'] == $year) {
+          $seq = $sett['receipt_sequence_current'];
+      } else {
+          // Fallback query
+          $q = $pdo->prepare("SELECT MAX(CAST(receipt_number AS UNSIGNED)) FROM payments WHERE receipt_year = ?");
+          $q->execute([$year]);
+          $seq = $q->fetchColumn() ?: 0;
+      }
+      $nextNum = $seq + 1;
+      
+      // Inserisci pagamento
+      // notes userà un tag speciale [MANUAL] per riconoscerlo, seguito dai dati extra se necessario
+      // Per rigenerazione futura, se vogliamo preservare i testi manuali, dovremmo salvarli.
+      // Salviamo in notes un JSON? O solo testo?
+      // "deve esserci scritto che l'inserimento è manuale".
+      // Salviamo "[MANUAL] " . $description
+      
+      $notes = "[MANUAL] " . $description;
+      
+      try {
+          $pdo->beginTransaction();
+          
+          $stmt = $pdo->prepare("INSERT INTO payments (member_id, payment_date, amount, method, notes, receipt_number, receipt_year, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
+          $stmt->execute([$member_id, $payment_date, $amount, $method, $notes, $nextNum, $year]);
+          $payId = $pdo->lastInsertId();
+          
+          // Aggiorna sequenza
+          if ($sett && $sett['receipt_sequence_year'] == $year) {
+              $pdo->prepare("UPDATE settings SET receipt_sequence_current = ? WHERE id = ?")->execute([$nextNum, $sett['id']]);
+          }
+          
+          // Genera PDF e salva
+          $htmlPath = dirname(__DIR__, 1) . '/templates/documents/receipt_template.html';
+          if (file_exists($htmlPath)) {
+              $html = file_get_contents($htmlPath);
+              $placeholders = [
+                  '{{receipt_number}}' => $nextNum,
+                  '{{year}}' => $year,
+                  '{{receipt_date}}' => date('d/m/Y', strtotime($payment_date)), // Data ricevuta = data pagamento
+                  '{{billing_details}}' => nl2br($billing_details),
+                  '{{description}}' => $description,
+                  '{{item_description}}' => $item_description,
+                  '{{amount}}' => number_format((float)$amount, 2, ',', '.'),
+                  '{{payment_date}}' => date('d/m/Y', strtotime($payment_date))
+              ];
+              $html = str_replace(array_keys($placeholders), array_values($placeholders), $html);
+              
+              // Sostituisci logo con Base64
+              $html = $this->replaceLogoForPdf($html);
+              
+              $pdfRelPath = 'storage/documents/receipts/'.$year.'/receipt_'.$nextNum.'.pdf';
+              $pdfAbsPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $pdfRelPath);
+              $dir = dirname($pdfAbsPath);
+              if (!is_dir($dir)) mkdir($dir, 0777, true);
+              
+              if (class_exists(TCPDF::class)) {
+                  $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+                  $pdf->SetCreator('Gestionale');
+                  $pdf->SetAuthor('Gestionale');
+                  $pdf->SetTitle('Ricevuta ' . $nextNum);
+                  $pdf->setPrintHeader(false);
+                  $pdf->setPrintFooter(false);
+                  $pdf->SetMargins(0, 0, 0);
+                  $pdf->SetAutoPageBreak(TRUE, 0);
+                  $pdf->AddPage();
+                  $pdf->SetFont('dejavusans', '', 10);
+                  $pdf->writeHTML($html, true, false, true, false, '');
+                  $pdf->Output($pdfAbsPath, 'F');
+                  
+                  // Salva record documento
+                  $pdo->prepare("INSERT INTO documents (member_id, type, year, file_path, created_at) VALUES (?, 'receipt', ?, ?, NOW())")
+                      ->execute([$member_id, $year, $pdfRelPath]);
+              }
+          }
+          
+          $pdo->commit();
+          Helpers::addFlash('success', 'Ricevuta manuale creata (N. ' . $nextNum . '/' . $year . ')');
+          Helpers::redirect('/receipts');
+          
+      } catch (\Exception $e) {
+          $pdo->rollBack();
+          Helpers::addFlash('danger', 'Errore creazione ricevuta: ' . $e->getMessage());
+          Helpers::redirect('/settings/ricevute');
+      }
   }
 
   public function updateRicevuteTemplate() {

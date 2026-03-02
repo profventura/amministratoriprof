@@ -13,12 +13,17 @@ class DocumentService {
     $htmlPath = $dir . DIRECTORY_SEPARATOR . 'receipt_' . $number . '.html';
     file_put_contents($htmlPath, $html);
     $pdfPath = $dir . DIRECTORY_SEPARATOR . 'receipt_' . $number . '.pdf';
-    if (class_exists('\\Dompdf\\Dompdf')) {
-      $dompdf = new \Dompdf\Dompdf();
-      $dompdf->loadHtml($html);
-      $dompdf->setPaper('A4', 'portrait');
-      $dompdf->render();
-      file_put_contents($pdfPath, $dompdf->output());
+    if (class_exists('TCPDF')) {
+       $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+       $pdf->SetCreator('Gestionale');
+      $pdf->setPrintHeader(false);
+      $pdf->setPrintFooter(false);
+      $pdf->SetMargins(0, 0, 0);
+      $pdf->SetAutoPageBreak(TRUE, 0);
+      $pdf->AddPage();
+      $pdf->SetFont('dejavusans', '', 10);
+      $pdf->writeHTML($html, true, false, true, false, '');
+      $pdf->Output($pdfPath, 'F');
       return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
     }
     return ['pdf'=>null, 'html'=>$htmlPath];
@@ -30,12 +35,17 @@ class DocumentService {
     $htmlPath = $dir . DIRECTORY_SEPARATOR . $basename . '.html';
     file_put_contents($htmlPath, $html);
     $pdfPath = $dir . DIRECTORY_SEPARATOR . $basename . '.pdf';
-    if (class_exists('\\Dompdf\\Dompdf')) {
-      $dompdf = new \Dompdf\Dompdf();
-      $dompdf->loadHtml($html);
-      $dompdf->setPaper('A4', 'portrait');
-      $dompdf->render();
-      file_put_contents($pdfPath, $dompdf->output());
+    if (class_exists('TCPDF')) {
+       $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+       $pdf->SetCreator('Gestionale');
+      $pdf->setPrintHeader(false);
+      $pdf->setPrintFooter(false);
+      $pdf->SetMargins(0, 0, 0);
+      $pdf->SetAutoPageBreak(TRUE, 0);
+      $pdf->AddPage();
+      $pdf->SetFont('dejavusans', '', 10);
+      $pdf->writeHTML($html, true, false, true, false, '');
+      $pdf->Output($pdfPath, 'F');
       return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
     }
     return ['pdf'=>null, 'html'=>$htmlPath];

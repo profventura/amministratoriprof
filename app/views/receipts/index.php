@@ -45,19 +45,26 @@
       </tr>
     </thead>
     <tbody>
-      <?php foreach ($rows as $r) { ?>
+      <?php foreach ($rows as $r) { 
+        $isManual = (strpos($r['notes'] ?? '', '[MANUAL]') === 0);
+      ?>
       <tr>
         <td><?php echo htmlspecialchars($r['receipt_number']); ?></td>
         <td><?php echo date('d/m/Y', strtotime($r['payment_date'])); ?></td>
         <td><?php echo htmlspecialchars($r['last_name'].' '.$r['first_name']); ?></td>
         <td>€ <?php echo number_format((float)$r['amount'], 2, ',', '.'); ?></td>
-        <td><?php echo htmlspecialchars($r['method']); ?></td>
+        <td>
+            <?php echo htmlspecialchars($r['method']); ?>
+            <?php if ($isManual): ?>
+                <span class="badge bg-warning text-dark ms-1">Manuale</span>
+            <?php endif; ?>
+        </td>
         <td>
           <a class="btn btn-sm btn-outline-primary" href="<?php echo \App\Core\Helpers::url('/receipts/'.$r['id'].'/download'); ?>">Scarica</a>
-          <form method="post" action="<?php echo \App\Core\Helpers::url('/receipts/'.$r['id'].'/regenerate'); ?>" class="d-inline" onsubmit="return confirm('Rigenerare il PDF della ricevuta?');">
-            <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-            <button class="btn btn-sm btn-outline-warning ms-1">Rigenera</button>
-          </form>
+          <button type="button" class="btn btn-sm btn-outline-warning ms-1" 
+              onclick="confirmRegenerate('<?php echo $r['id']; ?>', '<?php echo htmlspecialchars($r['receipt_number']); ?>')">
+              Rigenera
+          </button>
         </td>
       </tr>
       <?php } ?>
@@ -65,7 +72,37 @@
   </table>
 </div>
 
+<!-- Modal Conferma Rigenerazione -->
+<div class="modal fade" id="regenerateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Conferma Rigenerazione</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>Sei sicuro di voler rigenerare la ricevuta <strong><span id="receiptNum"></span></strong>?</p>
+        <p class="text-danger small">Verrà ricreato il file PDF utilizzando il template HTML corrente. Il file precedente verrà sovrascritto.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+        <form id="regenerateForm" method="post" action="">
+            <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+            <button type="submit" class="btn btn-warning">Sì, Rigenera</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+function confirmRegenerate(id, number) {
+    const modal = new bootstrap.Modal(document.getElementById('regenerateModal'));
+    document.getElementById('receiptNum').textContent = number;
+    document.getElementById('regenerateForm').action = "<?php echo \App\Core\Helpers::url('/receipts/'); ?>" + id + "/regenerate";
+    modal.show();
+}
+
 document.addEventListener('DOMContentLoaded', function(){
     if (!window.jQuery) return;
     var $ = window.jQuery;

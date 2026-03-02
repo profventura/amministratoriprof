@@ -232,4 +232,91 @@ class DocumentsController {
 
       Helpers::redirect($_SERVER['HTTP_REFERER']);
   }
+
+  public function generateMembershipCertificateMassive($year, $ids) {
+      Auth::require();
+      
+      $pdo = DB::conn();
+      $s = $pdo->query('SELECT * FROM settings ORDER BY id DESC LIMIT 1')->fetch();
+      $tplRel = $s['membership_certificate_template_docx_path'] ?? '';
+      
+      if (!$tplRel || !file_exists($tplAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $tplRel))) {
+          Helpers::addFlash('danger', 'Template certificato non trovato');
+          Helpers::redirect('/memberships?year=' . $year);
+          return;
+      }
+      
+      $count = 0;
+      $errors = 0;
+      
+      foreach ($ids as $id) {
+          // Recupera dati socio
+          // id qui è membership_id. Dobbiamo recuperare il member_id e il member_number dalla tabella members
+          $stmt = $pdo->prepare("SELECT m.member_id, mb.first_name, mb.last_name, mb.member_number, m.year 
+                                 FROM memberships m 
+                                 JOIN members mb ON m.member_id = mb.id 
+                                 WHERE m.id = ?");
+          $stmt->execute([(int)$id]);
+          $row = $stmt->fetch();
+          
+          if (!$row) continue;
+          
+          $name = strtoupper($row['first_name'] . ' ' . $row['last_name']);
+          $number = $row['member_number'];
+          $certYear = $row['year']; // Usa l'anno dell'iscrizione
+          
+          // Parametri stamp (identici a SettingsController::previewStamp o generateManualCertificate)
+          $opts = [];
+          $fields = ['name', 'number', 'date', 'year'];
+          foreach ($fields as $f) {
+              $opts["{$f}_x"] = (int)($s["certificate_stamp_{$f}_x"] ?? 0);
+              $opts["{$f}_y"] = (int)($s["certificate_stamp_{$f}_y"] ?? 0);
+              $opts["{$f}_font_size"] = (int)($s["certificate_stamp_{$f}_font_size"] ?? 12);
+              $opts["{$f}_color"] = $s["certificate_stamp_{$f}_color"] ?? '#000000';
+              $opts["{$f}_font_family"] = $s["certificate_stamp_{$f}_font_family"] ?? 'Arial';
+              $opts["{$f}_bold"] = !empty($s["certificate_stamp_{$f}_bold"]);
+          }
+          
+          $opts['date_value'] = date('d/m/Y'); // Data odierna di generazione
+          $opts['year_value'] = $certYear;
+          $opts['date_align'] = 'L';
+          $opts['number_align'] = 'L';
+          
+          // Definisci path di uscita
+          $relPath = 'storage/documents/certificates/' . $certYear . '/cert_' . $row['member_id'] . '_' . $certYear . '.pdf';
+          $absPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $relPath);
+          $dir = dirname($absPath);
+          if (!is_dir($dir)) mkdir($dir, 0777, true);
+          
+          // Genera
+          $res = \App\Services\PDFStampService::stampMembershipCertificate($tplAbs, $absPath, $name, $number, $opts);
+          
+          if ($res && file_exists($absPath)) {
+              // Salva o aggiorna record documents
+              // Cerca se esiste già per questo member e anno e tipo
+              $existDoc = $pdo->prepare("SELECT id FROM documents WHERE member_id=? AND type='membership_certificate' AND year=?");
+              $existDoc->execute([$row['member_id'], $certYear]);
+              $dId = $existDoc->fetchColumn();
+              
+              if ($dId) {
+                  $pdo->prepare("UPDATE documents SET file_path=?, created_at=NOW() WHERE id=?")->execute([$relPath, $dId]);
+              } else {
+                  $pdo->prepare("INSERT INTO documents (member_id, type, year, file_path, created_at) VALUES (?, 'membership_certificate', ?, ?, NOW())")
+                      ->execute([$row['member_id'], $certYear, $relPath]);
+              }
+              $count++;
+          } else {
+              $errors++;
+          }
+      }
+      
+      if ($count > 0) {
+          Helpers::addFlash('success', "$count certificati generati con successo.");
+      }
+      if ($errors > 0) {
+          Helpers::addFlash('warning', "$errors errori durante la generazione.");
+      }
+      
+      Helpers::redirect('/memberships?year=' . $year);
+  }
 }

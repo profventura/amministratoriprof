@@ -6,6 +6,8 @@ use App\Core\Helpers;
 use App\Core\DB;
 use App\Models\Document;
 use App\Services\DocumentService;
+use TCPDF;
+
 class ReceiptsController {
   public function index() {
     Auth::require();
@@ -49,8 +51,6 @@ class ReceiptsController {
   }
   public function regenerate($id) {
     Auth::require();
-    // if (!CSRF::validate($_POST['csrf'] ?? '')) { ... } // Temporaneamente disabilitato se chiamata diretta
-    
     $pdo = DB::conn();
     // Recupera pagamento e socio con indirizzo e CF
     $p = $pdo->prepare('SELECT p.*, mb.first_name, mb.last_name, mb.address, mb.city, mb.province, mb.zip_code, mb.tax_code, mb.email 
@@ -88,7 +88,7 @@ class ReceiptsController {
     
     $generated = false;
 
-    if ($tplAbs && is_file($tplAbs)) {
+    if ($tplAbs && is_file($tplAbs) && strtolower(pathinfo($tplAbs, PATHINFO_EXTENSION)) === 'pdf') {
         // Usa PDFStampService
         $opts = [];
         // Mappa campi DB settings -> opts
@@ -120,33 +120,93 @@ class ReceiptsController {
     }
 
     if (!$generated) {
-        // Fallback HTML se template PDF non esiste o fallisce
-        // Recupera template HTML default
-        $tplHtml = dirname(__DIR__) . '/templates/documents/receipt.html';
-        // Se non esiste, crea al volo un contenuto base? 
-        // DocumentService::renderTemplate gestisce file
-        
-        $vars = [
-          'association_name' => $settings['association_name'] ?? 'Associazione AP',
-          'receipt_number' => $fullNumber,
-          'receipt_year' => (string)$year,
-          'date' => $date,
-          'member_name' => $memberName,
-          'member_email' => $pay['email'] ?? '',
-          'year' => (string)$year,
-          'method' => $pay['method'],
-          'amount' => $amount,
-          'notes' => $description,
-        ];
-        
-        $htmlContent = \App\Services\DocumentService::renderTemplate($tplHtml, $vars);
-        $paths = \App\Services\DocumentService::saveReceipt($year, $number, $htmlContent);
-        if ($paths['pdf']) {
-            $outputRel = $paths['pdf']; // Potrebbe essere diverso se saveReceipt usa logica interna
-            $generated = true;
-        } elseif ($paths['html']) {
-            $outputRel = $paths['html'];
-            $generated = true;
+        // Logica HTML Template (nuova gestione)
+        $tplHtmlPath = dirname(__DIR__, 1) . '/templates/documents/receipt_template.html';
+        if (file_exists($tplHtmlPath)) {
+            $html = file_get_contents($tplHtmlPath);
+            
+            // Dati per placeholder
+            $billingDetails = "<strong>$memberName</strong><br>" . nl2br($memberAddress) . "<br>C.F.: $memberCF";
+            
+            $placeholders = [
+                '{{receipt_number}}' => $number,
+                '{{year}}' => $year,
+                '{{receipt_date}}' => $date,
+                '{{billing_details}}' => $billingDetails,
+                '{{description}}' => 'QUOTA ANNUALE ISCRIZIONE', // O $description
+                '{{item_description}}' => $description,
+                '{{amount}}' => number_format((float)$pay['amount'], 2, ',', '.'),
+                '{{payment_date}}' => $date
+            ];
+            
+            $html = str_replace(array_keys($placeholders), array_values($placeholders), $html);
+            
+            // Genera PDF con Dompdf o mPDF o salva HTML e poi converti
+            // Qui usiamo DocumentService::saveReceiptFromHtml che userà Dompdf
+            $pdfRelPath = 'storage/documents/receipts/'.$year.'/receipt_'.$number.'.pdf';
+            $pdfAbsPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $pdfRelPath);
+            
+            $dir = dirname($pdfAbsPath);
+            if (!is_dir($dir)) mkdir($dir, 0777, true);
+            
+            // Usa Dompdf (assicurati che sia installato, altrimenti salva HTML)
+            // Se non abbiamo Dompdf pronto nel service, salviamo l'HTML e basta?
+            // DocumentService::generatePdfFromHtml($html, $pdfAbsPath);
+            
+            // Quick implementation TCPDF
+             if (class_exists(TCPDF::class)) {
+                 $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
+                 $pdf->SetCreator('Gestionale');
+                $pdf->SetAuthor('Gestionale');
+                $pdf->SetTitle('Ricevuta ' . $number);
+                $pdf->setPrintHeader(false);
+                $pdf->setPrintFooter(false);
+                $pdf->SetMargins(0, 0, 0);
+                $pdf->SetAutoPageBreak(TRUE, 0);
+                $pdf->AddPage();
+                $pdf->SetFont('dejavusans', '', 10);
+                $pdf->writeHTML($html, true, false, true, false, '');
+                $pdf->Output($pdfAbsPath, 'F');
+                $generated = true;
+                $outputRel = $pdfRelPath;
+            } else {
+                // Fallback: salva HTML
+                $htmlRelPath = 'storage/documents/receipts/'.$year.'/receipt_'.$number.'.html';
+                $htmlAbsPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $htmlRelPath);
+                file_put_contents($htmlAbsPath, $html);
+                $outputRel = $htmlRelPath;
+                $generated = true;
+            }
+        }
+    }
+
+    if (!$generated) {
+        // Fallback vecchio (legacy)
+        if (file_exists(dirname(__DIR__) . '/templates/documents/receipt.html')) {
+            $tplHtml = dirname(__DIR__) . '/templates/documents/receipt.html';
+            
+            $vars = [
+              'association_name' => $settings['association_name'] ?? 'Associazione AP',
+              'receipt_number' => $fullNumber,
+              'receipt_year' => (string)$year,
+              'date' => $date,
+              'member_name' => $memberName,
+              'member_email' => $pay['email'] ?? '',
+              'year' => (string)$year,
+              'method' => $pay['method'],
+              'amount' => $amount,
+              'notes' => $description,
+            ];
+            
+            $htmlContent = \App\Services\DocumentService::renderTemplate($tplHtml, $vars);
+            $paths = \App\Services\DocumentService::saveReceipt($year, $number, $htmlContent);
+            if ($paths['pdf']) {
+                $outputRel = $paths['pdf'];
+                $generated = true;
+            } elseif ($paths['html']) {
+                $outputRel = $paths['html'];
+                $generated = true;
+            }
         }
     }
 
