@@ -36,6 +36,23 @@ class CertificatesController {
     $docPathPublic = null;
     $tplRel = $assoc['membership_certificate_template_docx_path'] ?? null;
     $tplAbs = $tplRel ? str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $tplRel) : null;
+
+    // Check if a document already exists for this member and year
+    $docModel = new Document();
+    $existingDoc = $pdo->prepare("SELECT id, file_path FROM documents WHERE member_id = ? AND type = 'membership_certificate' AND year = ?");
+    $existingDoc->execute([$memberId, $year]);
+    $oldDoc = $existingDoc->fetch();
+
+    if ($oldDoc) {
+        // Delete physical file
+        $oldAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $oldDoc['file_path']);
+        if (file_exists($oldAbs)) {
+            @unlink($oldAbs);
+        }
+        // Delete record (will be re-created)
+        $docModel->delete($oldDoc['id']);
+    }
+
     if ($tplAbs && is_file($tplAbs)) {
       $ext = strtolower(pathinfo($tplAbs, PATHINFO_EXTENSION));
       if ($ext === 'pdf') {
@@ -161,6 +178,21 @@ class CertificatesController {
         $mbr = $mbrModel->find($memberId);
         if (!$mbr) continue;
 
+        // Check if a document already exists for this member and year
+        $existingDoc = $pdo->prepare("SELECT id, file_path FROM documents WHERE member_id = ? AND type = 'membership_certificate' AND year = ?");
+        $existingDoc->execute([$memberId, $year]);
+        $oldDoc = $existingDoc->fetch();
+
+        if ($oldDoc) {
+            // Delete physical file
+            $oldAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $oldDoc['file_path']);
+            if (file_exists($oldAbs)) {
+                @unlink($oldAbs);
+            }
+            // Delete record
+            (new Document())->delete($oldDoc['id']);
+        }
+
         // Recupera data pagamento
         $paymentDate = !empty($membership['payment_date']) ? date('d/m/Y', strtotime($membership['payment_date'])) : date('d/m/Y');
 
@@ -273,6 +305,21 @@ class CertificatesController {
     foreach ($ids as $id) {
         $mbr = (new Member())->find((int)$id);
         if (!$mbr) continue;
+        
+        // Check if a document already exists for this member and year
+        $existingDoc = $pdo->prepare("SELECT id, file_path FROM documents WHERE member_id = ? AND type = 'membership_certificate' AND year = ?");
+        $existingDoc->execute([$id, $year]);
+        $oldDoc = $existingDoc->fetch();
+
+        if ($oldDoc) {
+            // Delete physical file
+            $oldAbs = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . $oldDoc['file_path']);
+            if (file_exists($oldAbs)) {
+                @unlink($oldAbs);
+            }
+            // Delete record
+            (new Document())->delete($oldDoc['id']);
+        }
         
         // Assicura iscrizione per l'anno corrente
         $membership = (new Membership())->getOrCreate((int)$id, $year);

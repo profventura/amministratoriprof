@@ -206,6 +206,9 @@ class DocumentsController {
       } elseif ($doc['type'] === 'membership_certificate') {
           $subject = $settings['email_certificate_subject'] ?: 'Certificato di Iscrizione';
           $body = $settings['email_certificate_body'] ?: 'Gentile socio, in allegato trovi il tuo certificato di iscrizione.';
+      } elseif ($doc['type'] === 'receipt') {
+          $subject = $settings['email_receipt_subject'] ?: 'Ricevuta Pagamento';
+          $body = $settings['email_receipt_body'] ?: 'Gentile socio, in allegato trovi la ricevuta del tuo pagamento.';
       }
 
       // Sostituzione placeholder (base)

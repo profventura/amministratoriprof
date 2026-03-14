@@ -1,5 +1,8 @@
 <?php
 namespace App\Services;
+use Dompdf\Dompdf;
+use Dompdf\Options;
+
 class DocumentService {
   public static function renderTemplate($templatePath, $vars) {
     $html = file_exists($templatePath) ? file_get_contents($templatePath) : '';
@@ -13,18 +16,19 @@ class DocumentService {
     $htmlPath = $dir . DIRECTORY_SEPARATOR . 'receipt_' . $number . '.html';
     file_put_contents($htmlPath, $html);
     $pdfPath = $dir . DIRECTORY_SEPARATOR . 'receipt_' . $number . '.pdf';
-    if (class_exists('TCPDF')) {
-       $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-       $pdf->SetCreator('Gestionale');
-      $pdf->setPrintHeader(false);
-      $pdf->setPrintFooter(false);
-      $pdf->SetMargins(0, 0, 0);
-      $pdf->SetAutoPageBreak(TRUE, 0);
-      $pdf->AddPage();
-      $pdf->SetFont('dejavusans', '', 10);
-      $pdf->writeHTML($html, true, false, true, false, '');
-      $pdf->Output($pdfPath, 'F');
-      return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
+    
+    if (class_exists(Dompdf::class)) {
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        
+        file_put_contents($pdfPath, $dompdf->output());
+        return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
     }
     return ['pdf'=>null, 'html'=>$htmlPath];
   }
@@ -35,18 +39,19 @@ class DocumentService {
     $htmlPath = $dir . DIRECTORY_SEPARATOR . $basename . '.html';
     file_put_contents($htmlPath, $html);
     $pdfPath = $dir . DIRECTORY_SEPARATOR . $basename . '.pdf';
-    if (class_exists('TCPDF')) {
-       $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-       $pdf->SetCreator('Gestionale');
-      $pdf->setPrintHeader(false);
-      $pdf->setPrintFooter(false);
-      $pdf->SetMargins(0, 0, 0);
-      $pdf->SetAutoPageBreak(TRUE, 0);
-      $pdf->AddPage();
-      $pdf->SetFont('dejavusans', '', 10);
-      $pdf->writeHTML($html, true, false, true, false, '');
-      $pdf->Output($pdfPath, 'F');
-      return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
+    
+    if (class_exists(Dompdf::class)) {
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        
+        file_put_contents($pdfPath, $dompdf->output());
+        return ['pdf'=>$pdfPath, 'html'=>$htmlPath];
     }
     return ['pdf'=>null, 'html'=>$htmlPath];
   }

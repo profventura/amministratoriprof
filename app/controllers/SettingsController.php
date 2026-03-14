@@ -5,7 +5,8 @@ use App\Core\CSRF;
 use App\Core\Helpers;
 use App\Core\DB;
 use App\Services\DocxTemplateService;
-use TCPDF;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class SettingsController {
   public function index() {
@@ -642,23 +643,18 @@ class SettingsController {
     Helpers::view('settings/ricevute', ['title'=>'Impostazioni Ricevute','row'=>$row, 'htmlContent'=>$htmlContent, 'members'=>$members]);
   }
 
-  private function getLogoBase64() {
-      $path = dirname(__DIR__, 2) . '/public/images/logos/ap_logo.jpg';
-      if (file_exists($path)) {
-          $type = pathinfo($path, PATHINFO_EXTENSION);
-          $data = file_get_contents($path);
-          return 'data:image/' . $type . ';base64,' . base64_encode($data);
-      }
-      return '';
-  }
-
   private function replaceLogoForPdf($html) {
-      $logo = $this->getLogoBase64();
-      if ($logo) {
-          $html = str_replace('{{logo_src}}', $logo, $html);
-          // Gestisci anche URL web se presente (es. salvato da editor)
-          $html = str_replace('/amministratoriprof/public/images/logos/ap_logo.jpg', $logo, $html);
-          $html = str_replace('http://localhost/amministratoriprof/public/images/logos/ap_logo.jpg', $logo, $html);
+      $path = dirname(__DIR__, 2) . '/public/images/logos/ap_logo.jpg';
+      $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
+      
+      if (file_exists($path)) {
+          // Usa path assoluto per Dompdf (più affidabile di URL o Base64 in locale)
+          $html = str_replace('{{logo_src}}', $path, $html);
+          
+          // Sostituisci anche eventuali URL web se presenti nel template salvato
+          $html = str_replace('/amministratoriprof/public/images/logos/ap_logo.jpg', $path, $html);
+          $html = str_replace('http://localhost/amministratoriprof/public/images/logos/ap_logo.jpg', $path, $html);
+          $html = str_replace('../public/images/logos/ap_logo.jpg', $path, $html);
       }
       return $html;
   }
@@ -698,22 +694,19 @@ class SettingsController {
       $html = $this->replaceLogoForPdf($html);
       
       // Genera PDF al volo
-      if (class_exists('TCPDF')) {
-          $pdf = new \TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-          $pdf->SetCreator('Gestionale');
-          $pdf->SetAuthor('Gestionale');
-          $pdf->SetTitle('Anteprima Ricevuta');
-          $pdf->setPrintHeader(false);
-          $pdf->setPrintFooter(false);
-          $pdf->SetMargins(0, 0, 0);
-          $pdf->SetAutoPageBreak(TRUE, 0);
-          $pdf->AddPage();
-          $pdf->SetFont('dejavusans', '', 10);
-          $pdf->writeHTML($html, true, false, true, false, '');
-          $pdf->Output('anteprima_ricevuta.pdf', 'I');
+      if (class_exists(Dompdf::class)) {
+          $options = new Options();
+          $options->set('isHtml5ParserEnabled', true);
+          $options->set('isRemoteEnabled', true);
+          
+          $dompdf = new Dompdf($options);
+          $dompdf->loadHtml($html);
+          $dompdf->setPaper('A4', 'portrait');
+          $dompdf->render();
+          $dompdf->stream("anteprima_ricevuta.pdf", ["Attachment" => false]);
           exit;
       } else {
-          echo "TCPDF non installato";
+          echo "Dompdf non installato";
       }
   }
 
@@ -737,22 +730,22 @@ class SettingsController {
       
       $html = str_replace(array_keys($data), array_values($data), $html);
       
-      if (class_exists(TCPDF::class)) {
-          $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-          $pdf->SetCreator('Gestionale');
-          $pdf->SetAuthor('Gestionale');
-          $pdf->SetTitle('Anteprima Ricevuta Template');
-          $pdf->setPrintHeader(false);
-          $pdf->setPrintFooter(false);
-          $pdf->SetMargins(0, 0, 0);
-          $pdf->SetAutoPageBreak(TRUE, 0);
-          $pdf->AddPage();
-          $pdf->SetFont('dejavusans', '', 10);
-          $pdf->writeHTML($html, true, false, true, false, '');
-          $pdf->Output('anteprima_ricevuta_template.pdf', 'I');
+      // Replace logo
+      $html = $this->replaceLogoForPdf($html);
+      
+      if (class_exists(Dompdf::class)) {
+          $options = new Options();
+          $options->set('isHtml5ParserEnabled', true);
+          $options->set('isRemoteEnabled', true);
+          
+          $dompdf = new Dompdf($options);
+          $dompdf->loadHtml($html);
+          $dompdf->setPaper('A4', 'portrait');
+          $dompdf->render();
+          $dompdf->stream("anteprima_ricevuta_template.pdf", ["Attachment" => false]);
           exit;
       } else {
-          echo "TCPDF non installato";
+          echo "Dompdf non installato";
       }
   }
 
@@ -854,19 +847,17 @@ class SettingsController {
               $dir = dirname($pdfAbsPath);
               if (!is_dir($dir)) mkdir($dir, 0777, true);
               
-              if (class_exists(TCPDF::class)) {
-                  $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-                  $pdf->SetCreator('Gestionale');
-                  $pdf->SetAuthor('Gestionale');
-                  $pdf->SetTitle('Ricevuta ' . $nextNum);
-                  $pdf->setPrintHeader(false);
-                  $pdf->setPrintFooter(false);
-                  $pdf->SetMargins(0, 0, 0);
-                  $pdf->SetAutoPageBreak(TRUE, 0);
-                  $pdf->AddPage();
-                  $pdf->SetFont('dejavusans', '', 10);
-                  $pdf->writeHTML($html, true, false, true, false, '');
-                  $pdf->Output($pdfAbsPath, 'F');
+              if (class_exists(Dompdf::class)) {
+                  $options = new Options();
+                  $options->set('isHtml5ParserEnabled', true);
+                  $options->set('isRemoteEnabled', true);
+                  
+                  $dompdf = new Dompdf($options);
+                  $dompdf->loadHtml($html);
+                  $dompdf->setPaper('A4', 'portrait');
+                  $dompdf->render();
+                  
+                  file_put_contents($pdfAbsPath, $dompdf->output());
                   
                   // Salva record documento
                   $pdo->prepare("INSERT INTO documents (member_id, type, year, file_path, created_at) VALUES (?, 'receipt', ?, ?, NOW())")
@@ -935,6 +926,11 @@ class SettingsController {
         '{{amount}}' => '180,00',
         '{{payment_date}}' => date('d/m/Y')
     ];
+    
+    // Fix per visualizzazione web
+    $webLogo = '/amministratoriprof/public/images/logos/ap_logo.jpg';
+    $html = str_replace('{{logo_src}}', $webLogo, $html);
+    $html = str_replace('../public/images/logos/ap_logo.jpg', $webLogo, $html);
     
     $preview = str_replace(array_keys($data), array_values($data), $html);
     echo $preview;

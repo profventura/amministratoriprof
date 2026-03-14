@@ -15,7 +15,23 @@ class APPaymentsController {
     Auth::require();
     $members = (new Member())->all();
     $year = (int)date('Y');
-    Helpers::view('ap_payments/create', ['title'=>'Nuovo Pagamento','members'=>$members,'year'=>$year]);
+    
+    $pdo = DB::conn();
+    $stmt = $pdo->prepare('SELECT p.id, p.payment_date, p.amount, p.method, p.receipt_number, p.receipt_year,
+                                  mb.first_name, mb.last_name, d.id as document_id
+                           FROM payments p 
+                           JOIN members mb ON mb.id=p.member_id
+                           LEFT JOIN documents d ON d.member_id = p.member_id AND d.type="receipt" AND d.year=p.receipt_year AND d.file_path LIKE CONCAT("%/receipt_", p.receipt_number, ".%")
+                           ORDER BY p.payment_date DESC, p.id DESC LIMIT 100');
+    $stmt->execute();
+    $recentPayments = $stmt->fetchAll();
+
+    Helpers::view('ap_payments/create', [
+        'title'=>'Nuovo Pagamento',
+        'members'=>$members,
+        'year'=>$year,
+        'recentPayments'=>$recentPayments
+    ]);
   }
   public function store() {
     Auth::require();

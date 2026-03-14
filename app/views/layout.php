@@ -321,6 +321,56 @@ $config = require __DIR__ . '/../config.php';
       </div>
     </div>
     <?php } ?>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteConfirmationModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Conferma Azione</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p id="deleteConfirmationText">Sei sicuro di voler procedere?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annulla</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Conferma</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var deleteModalEl = document.getElementById('deleteConfirmationModal');
+        if (deleteModalEl) {
+            var deleteModal = new bootstrap.Modal(deleteModalEl);
+            var confirmBtn = document.getElementById('confirmDeleteBtn');
+            var targetForm = null;
+
+            // Gestione form con data-confirm
+            document.body.addEventListener('submit', function(e) {
+                var form = e.target;
+                if (form.hasAttribute('data-confirm')) {
+                    e.preventDefault();
+                    targetForm = form;
+                    var msg = form.getAttribute('data-confirm') || 'Sei sicuro di voler procedere?';
+                    document.getElementById('deleteConfirmationText').textContent = msg;
+                    deleteModal.show();
+                }
+            });
+
+            confirmBtn.addEventListener('click', function() {
+                if (targetForm) {
+                    // Rimuovi l'attributo per evitare loop e invia
+                    targetForm.removeAttribute('data-confirm');
+                    targetForm.submit();
+                }
+                deleteModal.hide();
+            });
+        }
+    });
+    </script>
   </div>
   <div class="dark-transparent sidebartoggler"></div>
   <script src="<?php echo Helpers::url('public/libs/bootstrap/dist/js/bootstrap.bundle.min.js'); ?>"></script>
@@ -360,6 +410,7 @@ $config = require __DIR__ . '/../config.php';
       'memberships/index',
       'courses/index',
       'receipts/index',
+      'ap_payments/create',
     ];
     if (in_array(($template ?? ''), $dtTemplates, true)) {
   ?>

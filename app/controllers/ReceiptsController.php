@@ -6,7 +6,8 @@ use App\Core\Helpers;
 use App\Core\DB;
 use App\Models\Document;
 use App\Services\DocumentService;
-use TCPDF;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ReceiptsController {
   public function index() {
@@ -141,6 +142,16 @@ class ReceiptsController {
             
             $html = str_replace(array_keys($placeholders), array_values($placeholders), $html);
             
+            // Gestione Logo per PDF (path assoluto)
+            $logoPath = dirname(__DIR__, 2) . '/public/images/logos/ap_logo.jpg';
+            $logoPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $logoPath);
+            if (file_exists($logoPath)) {
+                 $html = str_replace('{{logo_src}}', $logoPath, $html);
+                 $html = str_replace('/amministratoriprof/public/images/logos/ap_logo.jpg', $logoPath, $html);
+                 $html = str_replace('http://localhost/amministratoriprof/public/images/logos/ap_logo.jpg', $logoPath, $html);
+                 $html = str_replace('../public/images/logos/ap_logo.jpg', $logoPath, $html);
+            }
+            
             // Genera PDF con Dompdf o mPDF o salva HTML e poi converti
             // Qui usiamo DocumentService::saveReceiptFromHtml che userà Dompdf
             $pdfRelPath = 'storage/documents/receipts/'.$year.'/receipt_'.$number.'.pdf';
@@ -153,20 +164,19 @@ class ReceiptsController {
             // Se non abbiamo Dompdf pronto nel service, salviamo l'HTML e basta?
             // DocumentService::generatePdfFromHtml($html, $pdfAbsPath);
             
-            // Quick implementation TCPDF
-             if (class_exists(TCPDF::class)) {
-                 $pdf = new TCPDF('L', PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
-                 $pdf->SetCreator('Gestionale');
-                $pdf->SetAuthor('Gestionale');
-                $pdf->SetTitle('Ricevuta ' . $number);
-                $pdf->setPrintHeader(false);
-                $pdf->setPrintFooter(false);
-                $pdf->SetMargins(0, 0, 0);
-                $pdf->SetAutoPageBreak(TRUE, 0);
-                $pdf->AddPage();
-                $pdf->SetFont('dejavusans', '', 10);
-                $pdf->writeHTML($html, true, false, true, false, '');
-                $pdf->Output($pdfAbsPath, 'F');
+            // Quick implementation Dompdf
+             if (class_exists(Dompdf::class)) {
+                 $options = new Options();
+                 $options->set('isHtml5ParserEnabled', true);
+                 $options->set('isRemoteEnabled', true);
+                 
+                 $dompdf = new Dompdf($options);
+                 $dompdf->loadHtml($html);
+                 $dompdf->setPaper('A4', 'portrait');
+                 $dompdf->render();
+                 
+                 file_put_contents($pdfAbsPath, $dompdf->output());
+                 
                 $generated = true;
                 $outputRel = $pdfRelPath;
             } else {

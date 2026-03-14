@@ -51,7 +51,7 @@
 </div>
 
 <div class="table-responsive">
-  <form id="tableForm" method="post"> <!-- Form fittizio per collegare i checkbox se usiamo form="bulkForm" sui checkbox -->
+  <!-- Form rimossa per evitare conflitto con form annidati (delete) -->
   <table id="datatable" class="table table-striped table-bordered text-nowrap">
     <thead class="table-light">
       <tr>
@@ -98,7 +98,6 @@
       <?php } ?>
     </tbody>
   </table>
-  </form>
 </div>
 
 <!-- Modale di Conferma Eliminazione -->

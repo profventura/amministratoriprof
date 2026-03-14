@@ -2,9 +2,9 @@
   <h3 class="mb-0">Scheda Socio</h3>
   <div>
     <a href="<?php echo \App\Core\Helpers::url('/members/'.$row['id'].'/edit'); ?>" class="btn btn-outline-primary">Modifica</a>
-    <form method="post" action="<?php echo \App\Core\Helpers::url('/members/'.$row['id'].'/delete'); ?>" class="d-inline">
+    <form method="post" action="<?php echo \App\Core\Helpers::url('/members/'.$row['id'].'/delete'); ?>" class="d-inline" data-confirm="Disattivare il socio?">
       <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
-      <button class="btn btn-outline-danger" onclick="return confirm('Disattivare il socio?')">Disattiva</button>
+      <button class="btn btn-outline-danger">Disattiva</button>
     </form>
   </div>
 </div>
@@ -127,7 +127,7 @@
               $typeLabel = $d['type'];
               if ($typeLabel === 'receipt') $typeLabel = 'Ricevuta';
               elseif ($typeLabel === 'membership_certificate') $typeLabel = 'Certificato Iscrizione';
-              elseif ($typeLabel === 'course_certificate') $typeLabel = 'Attestato Corso';
+              elseif ($typeLabel === 'course_certificate' || $typeLabel === 'dm_certificate') $typeLabel = 'Attestato Corso';
               
               $fileExt = strtolower(pathinfo($d['file_path'], PATHINFO_EXTENSION));
           ?>
@@ -145,7 +145,11 @@
               <a class="btn btn-sm btn-outline-primary me-1" href="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/download?download=1'); ?>" title="Scarica">
                   <i class="ti ti-download"></i>
               </a>
-              <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/delete'); ?>" class="d-inline" onsubmit="return confirm('Eliminare questo documento?');">
+              <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/email'); ?>" class="d-inline" data-confirm="Inviare via email?">
+                  <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
+                  <button type="submit" class="btn btn-sm btn-outline-warning me-1" title="Invia Email"><i class="ti ti-mail"></i></button>
+              </form>
+              <form method="post" action="<?php echo \App\Core\Helpers::url('/documents/'.$d['id'].'/delete'); ?>" class="d-inline" data-confirm="Eliminare questo documento?">
                   <input type="hidden" name="csrf" value="<?php echo \App\Core\CSRF::token(); ?>">
                   <button type="submit" class="btn btn-sm btn-outline-danger" title="Elimina"><i class="ti ti-trash"></i></button>
               </form>
